@@ -1,0 +1,40 @@
+# Core dependencies
+fastapi>=0.68.0
+uvicorn>=0.15.0
+streamlit>=1.22.0
+pydantic>=1.10.0
+
+# Video processing
+opencv-python>=4.7.0
+mediapipe>=0.10.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Audio processing
+librosa>=0.10.0
+sounddevice>=0.4.6
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Text processing
+transformers>=4.30.0
+torch>=2.0.0
+nltk>=3.8.1
+
+# Machine Learning
+scikit-learn>=1.2.0
+pandas>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+loguru>=0.7.0
+tqdm>=4.65.0
+
+# Testing
+pytest>=7.3.1
+pytest-cov>=4.1.0
+
+# Development
+black>=23.3.0
+isort>=5.12.0
+flake8>=6.0.0 
