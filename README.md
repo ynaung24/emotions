@@ -27,8 +27,8 @@ interview-emotion-analyzer/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/interview-emotion-analyzer.git
-cd interview-emotion-analyzer
+git clone https://github.com/ynaung24/emotions.git
+cd emotions
 ```
 
 2. Create a virtual environment:
