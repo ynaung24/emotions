@@ -37,12 +37,12 @@ def evaluate_response(response: str, question: str) -> Dict[str, Any]:
     
     if not matching_question:
         return {
-            'score': 0.0,
+            'score': 0,
             'feedback': 'Question not found in evaluation corpus',
             'metrics': {
-                'relevance': 0.0,
-                'clarity': 0.0,
-                'completeness': 0.0
+                'relevance': 0,
+                'clarity': 0,
+                'completeness': 0
             }
         }
     
@@ -56,30 +56,30 @@ def evaluate_response(response: str, question: str) -> Dict[str, Any]:
         similarity = util.pytorch_cos_sim(response_embedding, keyword_embedding).item()
         keyword_scores.append(similarity)
     
-    # Calculate metrics
-    completeness = sum(score > 0.5 for score in keyword_scores) / len(keywords)
-    relevance = max(0.0, min(1.0, sum(keyword_scores) / len(keywords)))
+    # Calculate metrics (scaled to 100)
+    completeness = int(sum(score > 0.5 for score in keyword_scores) / len(keywords) * 100)
+    relevance = int(max(0.0, min(1.0, sum(keyword_scores) / len(keywords))) * 100)
     
     # Simple clarity score based on response length and average sentence length
     sentences = response.split('.')
     avg_sentence_length = sum(len(s.split()) for s in sentences) / len(sentences)
-    clarity = max(0.0, min(1.0, 2.0 - abs(avg_sentence_length - 15) / 15))
+    clarity = int(max(0.0, min(1.0, 2.0 - abs(avg_sentence_length - 15) / 15)) * 100)
     
     # Calculate overall score
     criteria = corpus['evaluation_criteria']
-    overall_score = (
+    overall_score = int(
         relevance * criteria['relevance']['weight'] +
         clarity * criteria['clarity']['weight'] +
         completeness * criteria['completeness']['weight']
     )
     
     return {
-        'score': round(overall_score, 2),
-        'feedback': generate_feedback(relevance, clarity, completeness),
+        'score': overall_score,
+        'feedback': generate_feedback(relevance/100, clarity/100, completeness/100),
         'metrics': {
-            'relevance': round(relevance, 2),
-            'clarity': round(clarity, 2),
-            'completeness': round(completeness, 2)
+            'relevance': relevance,
+            'clarity': clarity,
+            'completeness': completeness
         }
     }
 

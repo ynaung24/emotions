@@ -1,25 +1,34 @@
-from flask import Flask, request, jsonify
-from evaluate import evaluate_response
-import json
-import os
+import streamlit as st
+from evaluate import evaluate_response, load_corpus
 
-app = Flask(__name__)
+st.set_page_config(page_title="Interview Evaluator", layout="centered")
+st.title("💬 Interview Response Evaluator")
 
-@app.route('/evaluate', methods=['POST'])
-def evaluate():
-    try:
-        data = request.get_json()
-        response = data.get('response')
-        question = data.get('question')
+# Load corpus and get questions
+corpus = load_corpus()
+questions = [q["text"] for q in corpus["questions"]]
+
+# UI Elements
+question = st.selectbox("Choose a question:", questions)
+user_answer = st.text_area("Your response:")
+
+if st.button("Evaluate"):
+    if not user_answer.strip():
+        st.warning("Please enter a response first.")
+    else:
+        evaluation = evaluate_response(user_answer, question)
         
-        if not response or not question:
-            return jsonify({'error': 'Missing response or question'}), 400
-            
-        evaluation = evaluate_response(response, question)
-        return jsonify(evaluation)
+        # Display results
+        st.subheader(f"🧠 Overall Score: {evaluation['score']}/100")
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        # Display metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Relevance", f"{evaluation['metrics']['relevance']}/100")
+        with col2:
+            st.metric("Clarity", f"{evaluation['metrics']['clarity']}/100")
+        with col3:
+            st.metric("Completeness", f"{evaluation['metrics']['completeness']}/100")
+        
+        # Display feedback
+        st.info(f"📋 Feedback: {evaluation['feedback']}")
