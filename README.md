@@ -31,21 +31,24 @@ git clone https://github.com/ynaung24/emotions.git
 cd emotions
 ```
 
-2. Create a virtual environment:
+2. Create and activate the Conda environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create the environment from environment.yml
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate emotions
 ```
 
-3. Install dependencies:
+3. Verify the installation:
 ```bash
-pip install -r requirements.txt
+python -c "import torch; import fastapi; import uvicorn; print('Environment setup successful!')"
 ```
 
 4. Run the application:
 ```bash
 # Start the FastAPI backend
-uvicorn app.api.main:app --reload
+uvicorn app.main:app --reload
 
 # In a separate terminal, start the Streamlit frontend
 streamlit run frontend/streamlit_app.py

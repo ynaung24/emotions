@@ -1,0 +1,30 @@
+{
+    "questions": [
+        {
+            "id": "q1",
+            "text": "Tell me about yourself",
+            "category": "general",
+            "expected_keywords": ["experience", "background", "skills", "education"]
+        },
+        {
+            "id": "q2",
+            "text": "What are your greatest strengths?",
+            "category": "strengths",
+            "expected_keywords": ["skills", "abilities", "qualities", "expertise"]
+        }
+    ],
+    "evaluation_criteria": {
+        "relevance": {
+            "description": "How well the response addresses the question",
+            "weight": 0.4
+        },
+        "clarity": {
+            "description": "How clear and well-structured the response is",
+            "weight": 0.3
+        },
+        "completeness": {
+            "description": "How comprehensive and detailed the response is",
+            "weight": 0.3
+        }
+    }
+} 
