@@ -1,26 +1,24 @@
-# Interview Emotion Analyzer
+# Interview Evaluator
 
-A multimodal emotion analysis system that combines facial expressions, vocal tone, and speech content to provide real-time emotion analysis during interviews.
+A tool for evaluating interview responses using natural language processing and semantic similarity.
 
 ## Features
 
-- Real-time facial expression analysis using CNN
-- Voice tone emotion detection using RNN/CNN
-- Speech content analysis using BERT
-- Ensemble fusion of multiple modalities
-- Live web interface using Streamlit
-- REST API using FastAPI
+- Question-response evaluation using sentence transformers
+- Scoring based on relevance, clarity, and completeness
+- Detailed feedback generation
+- Interactive web interface using Streamlit
 
 ## Project Structure
 
 ```
-interview-emotion-analyzer/
-├── app/                # Core application modules
-├── frontend/          # Streamlit UI
-├── notebooks/         # Model experiments
-├── data/             # Datasets
-├── models/           # Trained models
-└── tests/            # Unit tests
+interview_evaluator/
+├── app.py              # Main Streamlit application
+├── evaluate.py         # Core evaluation logic
+├── data/
+│   └── corpus.json    # Training and evaluation data
+├── requirements.txt    # Python dependencies
+└── README.md          # Project documentation
 ```
 
 ## Setup
@@ -31,36 +29,36 @@ git clone https://github.com/ynaung24/emotions.git
 cd emotions
 ```
 
-2. Create and activate the Conda environment:
+2. Create and activate a virtual environment:
 ```bash
-# Create the environment from environment.yml
-conda env create -f environment.yml
+# Create virtual environment
+python -m venv venv
 
 # Activate the environment
-conda activate emotions
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Verify the installation:
+3. Install dependencies:
 ```bash
-python -c "import torch; import fastapi; import uvicorn; print('Environment setup successful!')"
+pip install -r requirements.txt
 ```
 
 4. Run the application:
 ```bash
-# Start the FastAPI backend
-uvicorn app.main:app --reload
-
-# In a separate terminal, start the Streamlit frontend
-streamlit run frontend/streamlit_app.py
+streamlit run interview_evaluator/app.py
 ```
 
-## Docker Setup
+## Usage
 
-Alternatively, you can run the application using Docker:
-
-```bash
-docker-compose up
-```
+1. Select a question from the dropdown menu
+2. Enter your response in the text area
+3. Click "Evaluate" to get your score and feedback
+4. Review your scores for:
+   - Overall score (out of 100)
+   - Relevance (out of 100)
+   - Clarity (out of 100)
+   - Completeness (out of 100)
+5. Read the detailed feedback to improve your responses
 
 ## License
 
