@@ -3,21 +3,22 @@ import json
 import os
 import re
 from typing import Dict, Any, List
+import openai
+from dotenv import load_dotenv
+
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize the model
 model = SentenceTransformer('all-mpnet-base-v2')
 
-# Explicit list of inappropriate words (no regex patterns)
-INAPPROPRIATE_WORDS = {
-    # Strong profanity
-    'fuck', 'shit', 'damn', 'hell', 'bitch', 'asshole', 'dick', 'pussy', 'cunt',
-    'ass', 'bastard', 'motherfucker', 'fucker', 'shitty', 'fucking', 'damned',
-    'bloody', 'bugger', 'crap', 'darn', 'drat', 'goddamn', 'goddamned',
-    'arse', 'arsehole', 'bollocks', 'bullshit', 'cock', 'dickhead', 'prick',
-    'wanker', 'twat', 'wank', 'fanny', 'knob', 'bellend'
-}
+def load_corpus() -> Dict[str, Any]:
+    """Load the evaluation corpus from JSON file."""
+    corpus_path = os.path.join(os.path.dirname(__file__), 'data', 'corpus.json')
+    with open(corpus_path, 'r') as f:
+        return json.load(f)
 
-def contains_inappropriate_content(text: str) -> bool:
+def contains_inappropriate_content(text: str, inappropriate_words: List[str]) -> bool:
     """
     Check if text contains inappropriate content.
     Returns True only if an exact match of an inappropriate word is found.
@@ -28,15 +29,10 @@ def contains_inappropriate_content(text: str) -> bool:
     
     # Split into words and check each word
     words = set(text.split())  # Use set for O(1) lookup
+    inappropriate_set = set(inappropriate_words)  # Convert list to set for O(1) lookup
     
     # Check for exact matches only
-    return any(word in INAPPROPRIATE_WORDS for word in words)
-
-def load_corpus() -> Dict[str, Any]:
-    """Load the evaluation corpus from JSON file."""
-    corpus_path = os.path.join(os.path.dirname(__file__), 'data', 'corpus.json')
-    with open(corpus_path, 'r') as f:
-        return json.load(f)
+    return any(word in inappropriate_set for word in words)
 
 def evaluate_response(response: str, question: str) -> Dict[str, Any]:
     """
@@ -49,8 +45,10 @@ def evaluate_response(response: str, question: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing evaluation metrics
     """
+    corpus = load_corpus()
+    
     # Check for inappropriate content first
-    if contains_inappropriate_content(response):
+    if contains_inappropriate_content(response, corpus['inappropriate_words']):
         return {
             'score': 0,
             'feedback': 'Your response contains inappropriate language. Please maintain a professional tone in your interview responses.',
@@ -60,8 +58,6 @@ def evaluate_response(response: str, question: str) -> Dict[str, Any]:
                 'completeness': 0
             }
         }
-    
-    corpus = load_corpus()
     
     # Find matching question in corpus
     matching_question = None
