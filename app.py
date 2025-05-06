@@ -11,6 +11,9 @@ from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase
 from pydub import AudioSegment
 import io
 
+# Suppress tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 def process_audio_file(audio_path: str):
     """Process audio file for transcription and emotion detection."""
     try:
@@ -271,9 +274,62 @@ else:  # Voice Input page
             
             try:
                 # Process audio
-                process_audio_file(temp_audio_path)
+                with sr.AudioFile(temp_audio_path) as source:
+                    # Adjust for ambient noise
+                    st.session_state.recorder.adjust_for_ambient_noise(source, duration=0.5)
+                    
+                    # Record the entire audio file
+                    audio_data = st.session_state.recorder.record(source)
+                    
+                    try:
+                        # Use Google's speech recognition with longer timeout
+                        text = st.session_state.recorder.recognize_google(
+                            audio_data,
+                            language="en-US",
+                            show_all=False  # Get the most likely transcription
+                        )
+                        
+                        if text:
+                            st.session_state.transcribed_text = text
+                            st.session_state.user_answer = text
+                            st.session_state.recording_complete = True
+                            
+                            # Display transcription
+                            st.subheader("📝 Transcribed Text")
+                            st.write(text)
+                            
+                            # Get emotion scores
+                            try:
+                                emotion_scores = voice_processor.detect_emotions(temp_audio_path, text)
+                                
+                                # Display emotion analysis
+                                st.subheader("🎭 Emotion Analysis")
+                                for emotion, score in emotion_scores.items():
+                                    if score > 0.1:  # Only show significant emotions
+                                        st.progress(score, text=f"{emotion.capitalize()}: {score:.2f}")
+                            except Exception as e:
+                                st.warning(f"Could not analyze emotions: {str(e)}")
+                        else:
+                            st.error("No speech detected in the audio file")
+                            st.session_state.transcribed_text = ""
+                            st.session_state.user_answer = ""
+                            st.session_state.recording_complete = False
+                            
+                    except sr.UnknownValueError:
+                        st.error("Could not understand audio. Please ensure the audio is clear and in English.")
+                        st.session_state.transcribed_text = ""
+                        st.session_state.user_answer = ""
+                        st.session_state.recording_complete = False
+                    except sr.RequestError as e:
+                        st.error(f"Could not request results from speech recognition service; {e}")
+                        st.session_state.transcribed_text = ""
+                        st.session_state.user_answer = ""
+                        st.session_state.recording_complete = False
             except Exception as e:
-                st.error(f"Error processing audio: {str(e)}")
+                st.error(f"Error processing audio file: {str(e)}")
+                st.session_state.transcribed_text = ""
+                st.session_state.user_answer = ""
+                st.session_state.recording_complete = False
     
     # Add evaluate button
     if st.button("Evaluate Voice Response"):

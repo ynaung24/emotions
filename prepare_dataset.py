@@ -30,12 +30,84 @@ def download_go_emotions(output_dir: str) -> str:
         print("Downloading Go Emotions dataset...")
         url = "https://raw.githubusercontent.com/google-research/google-research/master/goemotions/data/full_dataset/goemotions_1.csv"
         df = pd.read_csv(url)
+        
+        # Process emotion columns
+        emotion_columns = [col for col in df.columns if col not in ['id', 'text', 'author', 'subreddit', 'link_id', 'parent_id', 'created_utc', 'rater_id']]
+        
+        # Convert emotion columns to binary list
+        df['emotions'] = df[emotion_columns].apply(
+            lambda x: [1 if val > 0 else 0 for val in x], 
+            axis=1
+        )
+        
+        # Keep only necessary columns
+        df = df[['text', 'emotions']]
+        
+        # Remove rows with no emotions
+        df = df[df['emotions'].apply(lambda x: sum(x) > 0)]
+        
         df.to_csv(csv_path, index=False)
-        print(f"Dataset downloaded to {csv_path}")
+        print(f"Dataset downloaded and processed. Total samples: {len(df)}")
     else:
         print(f"Dataset already exists at {csv_path}")
+        df = pd.read_csv(csv_path)
+        print(f"Loaded {len(df)} samples")
     
     return csv_path
+
+def download_emotion_stimulus(output_dir: str) -> pd.DataFrame:
+    """Download the Emotion Stimulus dataset."""
+    print("Downloading Emotion Stimulus dataset...")
+    dataset = load_dataset("emotion")
+    df = pd.DataFrame(dataset['train'])
+    
+    # Map emotions to our format
+    emotion_map = {
+        0: 'sadness',
+        1: 'joy',
+        2: 'love',
+        3: 'anger',
+        4: 'fear',
+        5: 'surprise'
+    }
+    
+    # Create emotion vector
+    df['emotions'] = df['label'].apply(
+        lambda x: [1 if emotion_map[x] == label else 0 for label in emotion_map.values()]
+    )
+    
+    # Keep only necessary columns
+    df = df[['text', 'emotions']]
+    print(f"Loaded {len(df)} samples from Emotion Stimulus dataset")
+    return df
+
+def download_ravdess(output_dir: str) -> pd.DataFrame:
+    """Download the RAVDESS dataset."""
+    print("Downloading RAVDESS dataset...")
+    dataset = load_dataset("ravdess")
+    df = pd.DataFrame(dataset['train'])
+    
+    # Map RAVDESS emotions to our emotion labels
+    emotion_map = {
+        0: 'neutral',
+        1: 'calm',
+        2: 'happiness',
+        3: 'sadness',
+        4: 'anger',
+        5: 'fear',
+        6: 'disgust',
+        7: 'surprise'
+    }
+    
+    # Create emotion vector
+    df['emotions'] = df['emotion'].apply(
+        lambda x: [1 if emotion_map[x] == label else 0 for label in emotion_map.values()]
+    )
+    
+    # Keep only necessary columns
+    df = df[['text', 'emotions']]
+    print(f"Loaded {len(df)} samples from RAVDESS dataset")
+    return df
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def generate_synthetic_audio(text: str, output_dir: str) -> str:
@@ -71,17 +143,45 @@ def process_dataset(csv_path: str, output_dir: str, use_tts: bool = True, max_sa
     temp_dir = os.path.join(output_dir, 'temp_audio')
     os.makedirs(temp_dir, exist_ok=True)
     
-    # Read the dataset
-    df = pd.read_csv(csv_path)
+    # Load and combine datasets
+    print("Loading datasets...")
+    go_emotions_df = pd.read_csv(csv_path)
+    emotion_stimulus_df = download_emotion_stimulus(output_dir)
     
-    # Limit samples if specified
-    if max_samples:
-        df = df.sample(n=min(max_samples, len(df)), random_state=42)
+    # Try to load RAVDESS dataset, but continue if not available
+    try:
+        ravdess_df = download_ravdess(output_dir)
+        print("Successfully loaded RAVDESS dataset")
+    except Exception as e:
+        print(f"Could not load RAVDESS dataset: {str(e)}")
+        print("Continuing with Go Emotions and Emotion Stimulus datasets only")
+        ravdess_df = pd.DataFrame(columns=['text', 'emotions'])
+    
+    # Combine datasets
+    print("Combining datasets...")
+    combined_df = pd.concat([
+        go_emotions_df,
+        emotion_stimulus_df,
+        ravdess_df
+    ], ignore_index=True)
+    
+    # Remove duplicates
+    combined_df = combined_df.drop_duplicates(subset=['text'])
+    
+    # Only limit samples if explicitly requested
+    if max_samples and max_samples > 0:
+        print(f"Limiting to {max_samples} samples")
+        combined_df = combined_df.sample(n=min(max_samples, len(combined_df)), random_state=42)
+    else:
+        print(f"Using full dataset with {len(combined_df)} samples")
     
     # Split into train and validation sets (90/10)
-    train_size = int(0.9 * len(df))
-    train_df = df[:train_size]
-    val_df = df[train_size:]
+    train_size = int(0.9 * len(combined_df))
+    train_df = combined_df[:train_size]
+    val_df = combined_df[train_size:]
+    
+    print(f"Training set size: {len(train_df)}")
+    print(f"Validation set size: {len(val_df)}")
     
     train_data = []
     val_data = []
@@ -90,7 +190,7 @@ def process_dataset(csv_path: str, output_dir: str, use_tts: bool = True, max_sa
     print("Processing training data...")
     for _, row in tqdm(train_df.iterrows(), total=len(train_df)):
         text = row['text']
-        emotions = [1 if float(row[col]) > 0 else 0 for col in df.columns if col not in ['text', 'id', 'author', 'subreddit', 'link_id', 'parent_id', 'created_utc', 'rater_id']]
+        emotions = row['emotions']
         
         if use_tts:
             try:
@@ -118,7 +218,7 @@ def process_dataset(csv_path: str, output_dir: str, use_tts: bool = True, max_sa
     print("Processing validation data...")
     for _, row in tqdm(val_df.iterrows(), total=len(val_df)):
         text = row['text']
-        emotions = [1 if float(row[col]) > 0 else 0 for col in df.columns if col not in ['text', 'id', 'author', 'subreddit', 'link_id', 'parent_id', 'created_utc', 'rater_id']]
+        emotions = row['emotions']
         
         if use_tts:
             try:
@@ -205,11 +305,25 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
     
-    # Check if model already exists
-    if os.path.exists(model_path):
-        print(f"Found existing model at {model_path}")
-        print("Skipping training as model already exists.")
-        return
+    # Check for force retrain argument
+    import sys
+    force_retrain = "--force-retrain" in sys.argv
+    
+    if force_retrain:
+        print("Force retrain flag detected. Removing existing model and data...")
+        if os.path.exists(model_path):
+            os.remove(model_path)
+            print(f"Removed existing model at {model_path}")
+        
+        train_data_path = os.path.join(output_dir, "train_data.json")
+        val_data_path = os.path.join(output_dir, "val_data.json")
+        
+        if os.path.exists(train_data_path):
+            os.remove(train_data_path)
+            print(f"Removed existing training data at {train_data_path}")
+        if os.path.exists(val_data_path):
+            os.remove(val_data_path)
+            print(f"Removed existing validation data at {val_data_path}")
     
     # Check for existing processed data
     train_data_path = os.path.join(output_dir, "train_data.json")
@@ -226,7 +340,7 @@ def main():
         # Download and process dataset
         print("Downloading and processing dataset...")
         csv_path = download_go_emotions(output_dir)
-        train_data, val_data = process_dataset(csv_path, output_dir, use_tts=True, max_samples=100)
+        train_data, val_data = process_dataset(csv_path, output_dir, use_tts=True)
         
         # Save processed data
         print("Saving processed data...")
@@ -242,13 +356,16 @@ def main():
             train_data=train_data,
             val_data=val_data,
             model_path=model_path,
-            num_epochs=10,
-            batch_size=32,
-            learning_rate=0.001
+            num_epochs=30,
+            batch_size=128,
+            learning_rate=0.0001
         )
         print(f"Model saved to {model_path}")
     except Exception as e:
         print(f"Error during training: {str(e)}")
+        print("Stack trace:")
+        import traceback
+        traceback.print_exc()
         return
     
     print(f"Dataset processed and saved to {output_dir}")
