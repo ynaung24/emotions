@@ -14,7 +14,7 @@ model = SentenceTransformer('all-mpnet-base-v2')
 
 def load_corpus() -> Dict[str, Any]:
     """Load the evaluation corpus from JSON file."""
-    corpus_path = os.path.join(os.path.dirname(__file__), 'data', 'corpus.json')
+    corpus_path = os.path.join('data', 'corpus.json')
     with open(corpus_path, 'r') as f:
         return json.load(f)
 

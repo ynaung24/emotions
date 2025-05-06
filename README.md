@@ -1,40 +1,39 @@
-# Interview Evaluator
+# Interview Response Evaluator
 
-A tool for evaluating interview responses using natural language processing and semantic similarity.
+A comprehensive interview response evaluation system that analyzes both text and voice responses using advanced NLP and emotion detection techniques.
 
 ## Features
 
-- Question-response evaluation using sentence transformers
-- Scoring based on relevance, clarity, and completeness
-- Detailed feedback generation
-- Interactive web interface using Streamlit
+- **Text Response Evaluation**
+  - Semantic analysis of responses
+  - Keyword matching and scoring
+  - Relevance, clarity, and completeness metrics
+  - Detailed feedback and improvement suggestions
 
-## Project Structure
+- **Voice Response Analysis**
+  - Emotion detection using RNN
+  - Audio feature extraction
+  - Multi-modal analysis (text + voice)
+  - Emotion visualization and scoring
 
-```
-interview_evaluator/
-├── app.py              # Main Streamlit application
-├── evaluate.py         # Core evaluation logic
-├── data/
-│   └── corpus.json    # Training and evaluation data
-├── requirements.txt    # Python dependencies
-└── README.md          # Project documentation
-```
+- **Evaluation Criteria**
+  - Relevance to the question
+  - Clarity of expression
+  - Completeness of response
+  - Professional tone assessment
+  - Emotional intelligence analysis
 
-## Setup
+## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/ynaung24/emotions.git
-cd emotions
+git clone https://github.com/yourusername/interview-evaluator.git
+cd interview-evaluator
 ```
 
-2. Create and activate a virtual environment:
+2. Create a virtual environment and activate it:
 ```bash
-# Create virtual environment
 python -m venv venv
-
-# Activate the environment
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
@@ -43,23 +42,74 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Run the application:
-```bash
-streamlit run interview_evaluator/app.py
-```
-
 ## Usage
 
-1. Select a question from the dropdown menu
-2. Enter your response in the text area
-3. Click "Evaluate" to get your score and feedback
-4. Review your scores for:
-   - Overall score (out of 100)
-   - Relevance (out of 100)
-   - Clarity (out of 100)
-   - Completeness (out of 100)
-5. Read the detailed feedback to improve your responses
+1. Start the application:
+```bash
+streamlit run app.py
+```
+
+2. Using the Evaluator:
+   - Select an interview question from the dropdown
+   - Choose between text or voice response
+   - For text: Type your response in the text area
+   - For voice: Record or upload your response
+   - Click "Evaluate" to get feedback
+
+3. Understanding the Results:
+   - Overall score (0-100)
+   - Individual metrics for relevance, clarity, and completeness
+   - Detailed feedback for improvement
+   - Emotion analysis (for voice responses)
+
+## Technical Details
+
+### Text Evaluation
+- Uses SentenceTransformer for semantic analysis
+- Keyword matching with cosine similarity
+- Scoring system based on multiple criteria
+- Professional tone assessment
+
+### Voice Processing
+- RNN-based emotion detection
+- BERT for text feature extraction
+- Mel spectrogram for audio features
+- Multi-modal fusion for comprehensive analysis
+
+### Dataset
+- Go Emotions dataset for emotion detection training
+- Custom corpus for interview questions
+- Synthetic audio generation for training
+
+## Project Structure
+
+```
+.
+├── app.py                 # Main Streamlit application
+├── evaluate.py           # Response evaluation logic
+├── voice_processor.py    # Voice processing and emotion detection
+├── prepare_dataset.py    # Dataset preparation script
+├── requirements.txt      # Project dependencies
+├── README.md            # Project documentation
+├── .gitignore           # Git ignore file
+└── data/                # Data directory
+    └── corpus.json/     # General interview prompts
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-MIT License 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Go Emotions dataset for emotion detection
+- SentenceTransformer for semantic analysis
+- Streamlit for the web interface 
