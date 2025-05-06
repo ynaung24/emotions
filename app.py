@@ -14,6 +14,11 @@ import io
 def process_audio_file(audio_path: str):
     """Process audio file for transcription and emotion detection."""
     try:
+        # Debug: Print initial state
+        st.write("Debug - Initial state:")
+        st.write(f"Session state user_answer: {st.session_state.user_answer}")
+        st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
+        
         # Verify file exists and has content
         if not os.path.exists(audio_path):
             st.error("Audio file not found!")
@@ -32,7 +37,15 @@ def process_audio_file(audio_path: str):
             try:
                 text = recognizer.recognize_google(audio_data)
                 st.write("Transcribed text:", text)
+                
+                # Store the transcribed text in session state
                 st.session_state.user_answer = text
+                st.session_state.recording_complete = True
+                
+                # Debug: Print state after successful transcription
+                st.write("Debug - After transcription:")
+                st.write(f"Session state user_answer: {st.session_state.user_answer}")
+                st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
                 
                 # Get emotion scores from audio
                 try:
@@ -48,13 +61,21 @@ def process_audio_file(audio_path: str):
                 
             except sr.UnknownValueError:
                 st.error("Could not understand audio")
+                st.session_state.user_answer = ""  # Clear any previous answer
+                st.session_state.recording_complete = False
             except sr.RequestError as e:
                 st.error(f"Could not request results; {e}")
+                st.session_state.user_answer = ""  # Clear any previous answer
+                st.session_state.recording_complete = False
     except Exception as e:
         st.error(f"Error processing audio: {str(e)}")
+        st.session_state.user_answer = ""  # Clear any previous answer
+        st.session_state.recording_complete = False
     finally:
-        # Don't delete the file immediately, wait for evaluation
-        pass
+        # Debug: Print final state
+        st.write("Debug - Final state:")
+        st.write(f"Session state user_answer: {st.session_state.user_answer}")
+        st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
 
 # Set up the page
 st.set_page_config(page_title="Interview Evaluator", layout="centered")
@@ -131,6 +152,8 @@ else:  # Voice Input page
         st.session_state.temp_audio_path = None
     if 'recording_complete' not in st.session_state:
         st.session_state.recording_complete = False
+    if 'transcribed_text' not in st.session_state:
+        st.session_state.transcribed_text = ""
     
     # Input method selection
     input_method = st.radio(
@@ -157,17 +180,55 @@ else:  # Voice Input page
                 with sr.Microphone() as source:
                     st.session_state.recorder.adjust_for_ambient_noise(source, duration=1)
                     st.info("Listening... (speak for at least 3 seconds)")
-                    audio = st.session_state.recorder.listen(source, timeout=10, phrase_time_limit=10)
+                    audio = st.session_state.recorder.listen(source, timeout=120, phrase_time_limit=120)
                     
-                    # Save to temporary file
-                    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio:
-                        temp_audio_path = temp_audio.name
-                        with open(temp_audio_path, 'wb') as f:
-                            f.write(audio.get_wav_data())
+                    # Create data directory if it doesn't exist
+                    os.makedirs('data', exist_ok=True)
+                    
+                    # Save to a fixed location in the data directory
+                    temp_audio_path = os.path.join('data', 'temp_recording.wav')
+                    with open(temp_audio_path, 'wb') as f:
+                        f.write(audio.get_wav_data())
                     
                     # Store the audio path in session state
                     st.session_state.temp_audio_path = temp_audio_path
-                    st.session_state.recording_complete = True
+                    
+                    # Process the audio immediately
+                    try:
+                        # Convert speech to text
+                        text = st.session_state.recorder.recognize_google(audio)
+                        if text:  # Only update if we got text
+                            st.session_state.transcribed_text = text
+                            st.session_state.user_answer = text
+                            st.session_state.recording_complete = True
+                            
+                            # Get emotion scores
+                            try:
+                                emotion_scores = voice_processor.detect_emotions(temp_audio_path, text)
+                                
+                                # Display emotion analysis
+                                st.subheader("🎭 Emotion Analysis")
+                                for emotion, score in emotion_scores.items():
+                                    if score > 0.1:  # Only show significant emotions
+                                        st.progress(score, text=f"{emotion.capitalize()}: {score:.2f}")
+                            except Exception as e:
+                                st.warning(f"Could not analyze emotions: {str(e)}")
+                        else:
+                            st.error("No speech detected")
+                            st.session_state.transcribed_text = ""
+                            st.session_state.user_answer = ""
+                            st.session_state.recording_complete = False
+                            
+                    except sr.UnknownValueError:
+                        st.error("Could not understand audio")
+                        st.session_state.transcribed_text = ""
+                        st.session_state.user_answer = ""
+                        st.session_state.recording_complete = False
+                    except sr.RequestError as e:
+                        st.error(f"Could not request results; {e}")
+                        st.session_state.transcribed_text = ""
+                        st.session_state.user_answer = ""
+                        st.session_state.recording_complete = False
                     
             except sr.WaitTimeoutError:
                 st.error("No speech detected within timeout period. Please try again.")
@@ -180,21 +241,12 @@ else:  # Voice Input page
             st.session_state.recording = False
             st.success("Recording stopped!")
             
-            # Process the recorded audio if available
-            if st.session_state.temp_audio_path and os.path.exists(st.session_state.temp_audio_path):
-                try:
-                    process_audio_file(st.session_state.temp_audio_path)
-                except Exception as e:
-                    st.error(f"Error processing audio: {str(e)}")
+            # Display current state
+            if st.session_state.transcribed_text:
+                st.subheader("📝 Transcribed Text")
+                st.write(st.session_state.transcribed_text)
             else:
-                st.warning("No audio file found. Please try recording again.")
-        
-        # Debug information
-        if st.session_state.temp_audio_path:
-            st.write(f"Audio file path: {st.session_state.temp_audio_path}")
-            st.write(f"File exists: {os.path.exists(st.session_state.temp_audio_path)}")
-            st.write(f"Recording complete: {st.session_state.recording_complete}")
-            st.write(f"File size: {os.path.getsize(st.session_state.temp_audio_path) if os.path.exists(st.session_state.temp_audio_path) else 'N/A'} bytes")
+                st.warning("No transcription available. Please try recording again.")
     
     else:  # Upload Audio File
         st.write("Upload your voice response (supported formats: WAV, MP3, M4A, OGG):")
@@ -206,15 +258,16 @@ else:  # Voice Input page
         )
         
         if audio_file:
+            # Create data directory if it doesn't exist
+            os.makedirs('data', exist_ok=True)
+            
             # Convert to WAV if needed
             audio_segment = AudioSegment.from_file(audio_file)
             
-            # Save to temporary file
-            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio:
-                audio_segment.export(temp_audio.name, format="wav")
-                temp_audio_path = temp_audio.name
-                st.session_state.temp_audio_path = temp_audio_path
-                st.session_state.recording_complete = True
+            # Save to a fixed location
+            temp_audio_path = os.path.join('data', 'temp_recording.wav')
+            audio_segment.export(temp_audio_path, format="wav")
+            st.session_state.temp_audio_path = temp_audio_path
             
             try:
                 # Process audio
@@ -224,11 +277,11 @@ else:  # Voice Input page
     
     # Add evaluate button
     if st.button("Evaluate Voice Response"):
-        if not st.session_state.user_answer:
-            st.warning("Please record or upload your voice response first.")
+        if not st.session_state.transcribed_text:
+            st.warning("No transcribed text found. Please record your response first.")
         else:
             try:
-                evaluation = evaluate_response(st.session_state.user_answer, question)
+                evaluation = evaluate_response(st.session_state.transcribed_text, question)
                 
                 # Display results
                 st.subheader(f"🧠 Overall Score: {evaluation['score']}/100")
