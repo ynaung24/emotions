@@ -19,3 +19,4 @@ tenacity==8.2.3
 streamlit-webrtc==0.47.1
 pydub==0.25.1
 pyaudio
+sounddevice

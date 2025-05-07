@@ -43,6 +43,8 @@ models/*.pt
 models/*.pth
 models/*.h5
 models/*.pkl
+*.wav
+*.mp3
 
 # Logs
 *.log
