@@ -11,6 +11,7 @@ import sounddevice as sd
 from pydub import AudioSegment
 import io
 import time
+import librosa
 
 # Suppress tokenizers warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -18,11 +19,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 def process_audio_file(audio_path: str):
     """Process audio file for transcription and emotion detection."""
     try:
-        # Debug: Print initial state
-        st.write("Debug - Initial state:")
-        st.write(f"Session state user_answer: {st.session_state.user_answer}")
-        st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
-        
         # Verify file exists and has content
         if not os.path.exists(audio_path):
             st.error("Audio file not found!")
@@ -46,20 +42,29 @@ def process_audio_file(audio_path: str):
                 st.session_state.user_answer = text
                 st.session_state.recording_complete = True
                 
-                # Debug: Print state after successful transcription
-                st.write("Debug - After transcription:")
-                st.write(f"Session state user_answer: {st.session_state.user_answer}")
-                st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
-                
                 # Get emotion scores from audio
                 try:
-                    emotion_scores = voice_processor.detect_emotions(audio_path, text)
+                    emotion_scores = voice_processor.detect_emotions('data/temp_recording.wav', text)
                     
                     # Display emotion analysis
                     st.subheader("🎭 Emotion Analysis")
-                    for emotion, score in emotion_scores.items():
-                        if score > 0.1:  # Only show significant emotions
-                            st.progress(score, text=f"{emotion.capitalize()}: {score:.2f}")
+                    if emotion_scores:
+                        # Sort emotions by score
+                        sorted_emotions = sorted(emotion_scores.items(), key=lambda x: x[1], reverse=True)
+                        
+                        # Display top emotions
+                        st.write("Top emotions detected:")
+                        for emotion, score in sorted_emotions:
+                            if score > 0.05:  # Only show emotions with score > 5%
+                                st.write(f"• {emotion.capitalize()}: {score:.1%}")
+                                st.progress(score, text=f"{emotion.capitalize()}")
+                        
+                        # Show all emotions in expander
+                        with st.expander("View all emotion scores"):
+                            for emotion, score in sorted_emotions:
+                                st.write(f"{emotion}: {score:.4f}")
+                    else:
+                        st.warning("No emotion scores were returned")
                 except Exception as e:
                     st.warning(f"Could not analyze emotions: {str(e)}")
                 
@@ -75,11 +80,6 @@ def process_audio_file(audio_path: str):
         st.error(f"Error processing audio: {str(e)}")
         st.session_state.user_answer = ""  # Clear any previous answer
         st.session_state.recording_complete = False
-    finally:
-        # Debug: Print final state
-        st.write("Debug - Final state:")
-        st.write(f"Session state user_answer: {st.session_state.user_answer}")
-        st.write(f"Session state recording_complete: {st.session_state.recording_complete}")
 
 def record_audio():
     """Simple audio recording function."""
@@ -95,28 +95,14 @@ def record_audio():
         os.makedirs('data', exist_ok=True)
         output_path = os.path.join('data', 'temp_recording.wav')
         
-        # Debug information
-        st.write("Debug - Before saving:")
-        st.write(f"Recording shape: {recording.shape}")
-        st.write(f"Output path: {output_path}")
-        
         # Save the recording
         sf.write(output_path, recording, 16000)
-        
-        # Debug information after saving
-        st.write("Debug - After saving:")
-        if os.path.exists(output_path):
-            file_size = os.path.getsize(output_path)
-            st.write(f"File exists: Yes (Size: {file_size} bytes)")
-        else:
-            st.write("File was not created!")
         
         st.write(f"Recording saved to {output_path}")
         return output_path
         
     except Exception as e:
         st.error(f"Error during recording: {str(e)}")
-        st.write(f"Debug - Exception details: {str(e)}")
         return None
 
 # Set up the page
@@ -129,7 +115,6 @@ if os.path.exists(model_path):
         voice_processor = VoiceProcessor(model_path=model_path)
         st.success("Emotion detection model loaded successfully!")
     except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
         voice_processor = VoiceProcessor()  # Fallback to default model
         st.warning("Using default model due to loading error.")
 else:
@@ -213,20 +198,12 @@ else:  # Voice Input page
                 audio_path = record_audio()
                 
                 if audio_path and os.path.exists(audio_path):
-                    # Debug information about the saved file
-                    st.write("Debug - File information:")
-                    st.write(f"Audio path: {audio_path}")
-                    st.write(f"File exists: {os.path.exists(audio_path)}")
-                    if os.path.exists(audio_path):
-                        st.write(f"File size: {os.path.getsize(audio_path)} bytes")
-                    
                     # Play back the recording
                     st.audio(audio_path)
                 else:
                     st.error("Recording failed. Please try again.")
             except Exception as e:
                 st.error(f"Error during recording: {str(e)}")
-                st.write(f"Debug - Exception details: {str(e)}")
         
         # Add evaluate button that handles both transcription and evaluation
         if st.button("Evaluate Voice Response", key="evaluate_voice"):
@@ -257,15 +234,75 @@ else:  # Voice Input page
                             
                             # Display emotion analysis
                             st.subheader("🎭 Emotion Analysis")
-                            for emotion, score in emotion_scores.items():
-                                if score > 0.1:  # Only show significant emotions
-                                    st.progress(score, text=f"{emotion.capitalize()}: {score:.2f}")
+                            if emotion_scores:
+                                # Sort emotions by score
+                                sorted_emotions = sorted(emotion_scores.items(), key=lambda x: x[1], reverse=True)
+                                
+                                # Display top emotions
+                                st.write("Top emotions detected:")
+                                for emotion, score in sorted_emotions:
+                                    if score > 0.05:  # Only show emotions with score > 5%
+                                        st.write(f"• {emotion.capitalize()}: {score:.1%}")
+                                        st.progress(score, text=f"{emotion.capitalize()}")
+                                
+                                # Show all emotions in expander
+                                with st.expander("View all emotion scores"):
+                                    for emotion, score in sorted_emotions:
+                                        st.write(f"{emotion}: {score:.4f}")
+                            else:
+                                st.warning("No emotion scores were returned")
                         except Exception as e:
                             st.warning(f"Could not analyze emotions: {str(e)}")
                         
                         # Evaluate the response
                         try:
+                            # Get base evaluation
                             evaluation = evaluate_response(text, question)
+                            
+                            # Define positive emotions and their weights
+                            positive_emotions = {
+                                'pride': 1.2,
+                                'confidence': 1.2,
+                                'enthusiasm': 1.15,
+                                'excitement': 1.15,
+                                'optimism': 1.1,
+                                'joy': 1.1,
+                                'gratitude': 1.1,
+                                'admiration': 1.05,
+                                'contentment': 1.05
+                            }
+                            
+                            # Calculate emotion boost
+                            emotion_boost = 0
+                            emotion_impacts = []  # Store emotion impacts for feedback
+                            if emotion_scores:
+                                for emotion, score in emotion_scores.items():
+                                    if emotion.lower() in positive_emotions and score > 0.05:
+                                        impact = score * positive_emotions[emotion.lower()]
+                                        emotion_boost += impact
+                                        emotion_impacts.append({
+                                            'emotion': emotion,
+                                            'score': score,
+                                            'impact': impact,
+                                            'weight': positive_emotions[emotion.lower()]
+                                        })
+                            
+                            # Apply boost to scores (capped at 100)
+                            if emotion_boost > 0:
+                                boost_factor = min(1 + emotion_boost, 1.3)  # Cap at 30% boost
+                                original_score = evaluation['score']
+                                evaluation['score'] = min(int(evaluation['score'] * boost_factor), 100)
+                                evaluation['metrics']['relevance'] = min(int(evaluation['metrics']['relevance'] * boost_factor), 100)
+                                evaluation['metrics']['clarity'] = min(int(evaluation['metrics']['clarity'] * boost_factor), 100)
+                                evaluation['metrics']['completeness'] = min(int(evaluation['metrics']['completeness'] * boost_factor), 100)
+                                
+                                # Add emotion impact information to feedback
+                                if emotion_impacts:
+                                    evaluation['feedback'] += "\n\nEmotional Impact Analysis:"
+                                    for impact in sorted(emotion_impacts, key=lambda x: x['impact'], reverse=True):
+                                        evaluation['feedback'] += f"\n• {impact['emotion'].capitalize()}: {impact['score']:.1%} detected (weight: {impact['weight']:.2f}x) → {impact['impact']:.1%} boost"
+                                    evaluation['feedback'] += f"\n\nTotal emotional boost: {emotion_boost:.1%} (capped at 30%)"
+                                    evaluation['feedback'] += f"\nScore adjusted from {original_score} to {evaluation['score']}"
                             
                             # Display results
                             st.subheader(f"🧠 Overall Score: {evaluation['score']}/100")
@@ -292,7 +329,6 @@ else:  # Voice Input page
                 st.error(f"Could not request results from speech recognition service; {e}")
             except Exception as e:
                 st.error(f"Error processing audio: {str(e)}")
-                st.write(f"Debug - Processing error: {str(e)}")
 
     else:  # Upload Audio File
         st.write("Upload your voice response (supported formats: WAV, MP3, M4A, OGG):")
@@ -347,11 +383,92 @@ else:  # Voice Input page
                                 
                                 # Display emotion analysis
                                 st.subheader("🎭 Emotion Analysis")
-                                for emotion, score in emotion_scores.items():
-                                    if score > 0.1:  # Only show significant emotions
-                                        st.progress(score, text=f"{emotion.capitalize()}: {score:.2f}")
+                                if emotion_scores:
+                                    # Sort emotions by score
+                                    sorted_emotions = sorted(emotion_scores.items(), key=lambda x: x[1], reverse=True)
+                                    
+                                    # Display top emotions
+                                    st.write("Top emotions detected:")
+                                    for emotion, score in sorted_emotions:
+                                        if score > 0.05:  # Only show emotions with score > 5%
+                                            st.write(f"• {emotion.capitalize()}: {score:.1%}")
+                                            st.progress(score, text=f"{emotion.capitalize()}")
+                                    
+                                    # Show all emotions in expander
+                                    with st.expander("View all emotion scores"):
+                                        for emotion, score in sorted_emotions:
+                                            st.write(f"{emotion}: {score:.4f}")
+                                else:
+                                    st.warning("No emotion scores were returned")
                             except Exception as e:
                                 st.warning(f"Could not analyze emotions: {str(e)}")
+                            
+                            # Evaluate the response
+                            try:
+                                # Get base evaluation
+                                evaluation = evaluate_response(text, question)
+                                
+                                # Define positive emotions and their weights
+                                positive_emotions = {
+                                    'pride': 1.2,
+                                    'confidence': 1.2,
+                                    'enthusiasm': 1.15,
+                                    'excitement': 1.15,
+                                    'optimism': 1.1,
+                                    'joy': 1.1,
+                                    'gratitude': 1.1,
+                                    'admiration': 1.05,
+                                    'contentment': 1.05
+                                }
+                                
+                                # Calculate emotion boost
+                                emotion_boost = 0
+                                emotion_impacts = []  # Store emotion impacts for feedback
+                                if emotion_scores:
+                                    for emotion, score in emotion_scores.items():
+                                        if emotion.lower() in positive_emotions and score > 0.05:
+                                            impact = score * positive_emotions[emotion.lower()]
+                                            emotion_boost += impact
+                                            emotion_impacts.append({
+                                                'emotion': emotion,
+                                                'score': score,
+                                                'impact': impact,
+                                                'weight': positive_emotions[emotion.lower()]
+                                            })
+                                
+                                # Apply boost to scores (capped at 100)
+                                if emotion_boost > 0:
+                                    boost_factor = min(1 + emotion_boost, 1.3)  # Cap at 30% boost
+                                    original_score = evaluation['score']
+                                    evaluation['score'] = min(int(evaluation['score'] * boost_factor), 100)
+                                    evaluation['metrics']['relevance'] = min(int(evaluation['metrics']['relevance'] * boost_factor), 100)
+                                    evaluation['metrics']['clarity'] = min(int(evaluation['metrics']['clarity'] * boost_factor), 100)
+                                    evaluation['metrics']['completeness'] = min(int(evaluation['metrics']['completeness'] * boost_factor), 100)
+                                    
+                                    # Add emotion impact information to feedback
+                                    if emotion_impacts:
+                                        evaluation['feedback'] += "\n\nEmotional Impact Analysis:"
+                                        for impact in sorted(emotion_impacts, key=lambda x: x['impact'], reverse=True):
+                                            evaluation['feedback'] += f"\n• {impact['emotion'].capitalize()}: {impact['score']:.1%} detected (weight: {impact['weight']:.2f}x) → {impact['impact']:.1%} boost"
+                                        evaluation['feedback'] += f"\n\nTotal emotional boost: {emotion_boost:.1%} (capped at 30%)"
+                                        evaluation['feedback'] += f"\nScore adjusted from {original_score} to {evaluation['score']}"
+                                
+                                # Display results
+                                st.subheader(f"🧠 Overall Score: {evaluation['score']}/100")
+                                
+                                # Display metrics
+                                col1, col2, col3 = st.columns(3)
+                                with col1:
+                                    st.metric("Relevance", f"{evaluation['metrics']['relevance']}/100")
+                                with col2:
+                                    st.metric("Clarity", f"{evaluation['metrics']['clarity']}/100")
+                                with col3:
+                                    st.metric("Completeness", f"{evaluation['metrics']['completeness']}/100")
+                                
+                                # Display feedback
+                                st.info(f"📋 Feedback: {evaluation['feedback']}")
+                            except Exception as e:
+                                st.error(f"Error during evaluation: {str(e)}")
                         else:
                             st.error("No speech detected in the audio file")
                             st.session_state.transcribed_text = ""
