@@ -5,23 +5,29 @@ A comprehensive interview response evaluation system that analyzes both text and
 ## Features
 
 - **Text Response Evaluation**
-  - Semantic analysis of responses
+  - Semantic analysis using BERT for text understanding
   - Keyword matching and scoring
   - Relevance, clarity, and completeness metrics
   - Detailed feedback and improvement suggestions
+  - Professional tone assessment
 
 - **Voice Response Analysis**
-  - Emotion detection using RNN
-  - Audio feature extraction
-  - Multi-modal analysis (text + voice)
-  - Emotion visualization and scoring
+  - Multi-modal emotion detection using RNN
+  - BERT-based text feature extraction
+  - Mel spectrogram for audio feature extraction
+  - Real-time emotion visualization and scoring
+  - Support for 29 distinct emotions including:
+    - Basic emotions (joy, sadness, anger, fear, surprise)
+    - Complex emotions (pride, gratitude, admiration, contentment)
+    - Professional emotions (confidence, enthusiasm, optimism)
 
 - **Evaluation Criteria**
   - Relevance to the question
   - Clarity of expression
   - Completeness of response
   - Professional tone assessment
-  - Emotional intelligence analysis
+  - Emotional intelligence analysis with weighted scoring
+  - Positive emotion boost system (up to 30% score enhancement)
 
 ## Installation
 
@@ -65,19 +71,21 @@ streamlit run app.py
 ## Technical Details
 
 ### Text Evaluation
-- Uses SentenceTransformer for semantic analysis
-- Keyword matching with cosine similarity
-- Scoring system based on multiple criteria
+- BERT (bert-base-uncased) for semantic analysis
+- Custom scoring system for interview responses
+- Multi-criteria evaluation framework
 - Professional tone assessment
 
 ### Voice Processing
-- RNN-based emotion detection
+- RNN-based emotion detection model
 - BERT for text feature extraction
 - Mel spectrogram for audio features
 - Multi-modal fusion for comprehensive analysis
+- Real-time emotion detection and scoring
 
 ### Dataset
 - Go Emotions dataset for emotion detection training
+- Emotion Stimulus dataset for additional training data
 - Custom corpus for interview questions
 - Synthetic audio generation for training
 
