@@ -5,7 +5,7 @@ librosa==0.10.1
 soundfile==0.12.1
 numpy==1.26.4
 pandas==2.1.1
-tqdm==4.66.1
+tqdm==4.66.3
 gdown==4.7.1
 python-dotenv==1.0.0
 openai>=1.12.0
