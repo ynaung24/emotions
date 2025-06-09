@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Core Dependencies
 torch>=2.0.0
 torchaudio>=2.0.0
@@ -12,6 +13,16 @@ numpy>=1.24.3
 pandas>=2.1.1
 scipy>=1.10.1
 tqdm==4.66.1
+=======
+torch==2.7.0
+sentence-transformers==2.2.2
+transformers==4.50.0
+librosa==0.10.1
+soundfile==0.12.1
+numpy==1.26.4
+pandas==2.1.1
+tqdm==4.66.3
+>>>>>>> 99f9ef66f3249fe495378e63e4f3ba5bce460d7a
 gdown==4.7.1
 
 # NLP
@@ -38,9 +49,23 @@ accelerate>=0.23.0
 
 # Optional / For Development
 openai>=1.12.0
+<<<<<<< HEAD
 huggingface-hub>=0.16.4
 streamlit>=1.31.0
 streamlit-webrtc>=0.47.1
 spacy>=3.4.0
 scikit-learn>=1.0.2
 nltk>=3.7
+=======
+streamlit==1.37.0
+datasets==2.14.5
+gTTS==2.4.0
+huggingface-hub>=0.16.4,<0.18
+tokenizers>=0.14.0,<0.15
+SpeechRecognition==3.10.0
+tenacity==8.2.3
+streamlit-webrtc==0.47.1
+pydub==0.25.1
+pyaudio
+sounddevice
+>>>>>>> 99f9ef66f3249fe495378e63e4f3ba5bce460d7a
