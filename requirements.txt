@@ -1,22 +1,46 @@
-torch==2.2.2
-sentence-transformers==2.2.2
-transformers==4.35.0
+# Core Dependencies
+torch>=2.0.0
+torchaudio>=2.0.0
+torchvision>=0.15.0
+sentence-transformers>=2.2.2
+transformers>=4.32.0
+
+# Data Processing
 librosa==0.10.1
 soundfile==0.12.1
-numpy==1.26.4
-pandas==2.1.1
+numpy>=1.24.3
+pandas>=2.1.1
+scipy>=1.10.1
 tqdm==4.66.1
 gdown==4.7.1
-python-dotenv==1.0.0
+
+# NLP
+nltk>=3.8.1
+spacy>=3.7.2
+en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1.tar.gz
+gTTS>=2.4.0
+
+# Utilities
+python-dotenv>=1.0.0
+fsspec>=2023.6.0,<2023.9.0
+click>=8.1.7
+packaging>=23.2
+pillow>=10.2.0
+pydub>=0.25.1
+pyaudio>=0.2.13
+sounddevice>=0.4.6
+wavio>=0.0.8
+datasets>=2.14.5
+
+# Performance
+tokenizers>=0.14.0
+accelerate>=0.23.0
+
+# Optional / For Development
 openai>=1.12.0
-streamlit==1.31.0
-datasets==2.14.5
-gTTS==2.4.0
-huggingface-hub>=0.16.4,<0.18
-tokenizers>=0.14.0,<0.15
-SpeechRecognition==3.10.0
-tenacity==8.2.3
-streamlit-webrtc==0.47.1
-pydub==0.25.1
-pyaudio
-sounddevice
+huggingface-hub>=0.16.4
+streamlit>=1.31.0
+streamlit-webrtc>=0.47.1
+spacy>=3.4.0
+scikit-learn>=1.0.2
+nltk>=3.7

@@ -45,6 +45,7 @@ models/*.h5
 models/*.pkl
 *.wav
 *.mp3
+model_cache/
 
 # Logs
 *.log
