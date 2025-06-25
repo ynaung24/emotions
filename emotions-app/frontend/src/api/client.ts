@@ -1,13 +1,45 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = 'http://localhost:8000';
+
+// Log API requests and responses
+const requestLogger = (config: any) => {
+  console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, config.data || '');
+  return config;
+};
+
+const responseLogger = (response: any) => {
+  console.log(`[API] ${response.status} ${response.config.url}`, response.data);
+  return response;
+};
+
+const errorLogger = (error: any) => {
+  if (axios.isAxiosError(error)) {
+    console.error(
+      `[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+      {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      }
+    );
+  } else {
+    console.error('[API Error]', error);
+  }
+  return Promise.reject(error);
+};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 second timeout
 });
+
+// Add request and response interceptors
+apiClient.interceptors.request.use(requestLogger);
+apiClient.interceptors.response.use(responseLogger, errorLogger);
 
 export interface Question {
   id: string;

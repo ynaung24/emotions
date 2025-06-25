@@ -123,10 +123,51 @@ def get_embedding(text: str) -> np.ndarray:
     return embedding_cache[text]
 
 def load_corpus() -> Dict[str, Any]:
-    """Load the evaluation corpus from JSON file."""
-    corpus_path = os.path.join('data', 'corpus.json')
-    with open(corpus_path, 'r') as f:
-        return json.load(f)
+    """
+    Load and validate the evaluation corpus from JSON file.
+    
+    Returns:
+        Dict containing the corpus data
+        
+    Raises:
+        FileNotFoundError: If the corpus file doesn't exist
+        ValueError: If the corpus is missing required fields
+    """
+    # Use the absolute path to the corpus file
+    corpus_path = '/Users/ynaung/personal_github/emotions/data/corpus.json'
+    print(f"Loading corpus from: {corpus_path}")
+    
+    if not os.path.exists(corpus_path):
+        raise FileNotFoundError(f"Corpus file not found at: {corpus_path}")
+    
+    try:
+        with open(corpus_path, 'r', encoding='utf-8') as f:
+            corpus = json.load(f)
+            
+        # Validate corpus structure
+        required_sections = ['questions', 'evaluation_criteria']
+        for section in required_sections:
+            if section not in corpus:
+                raise ValueError(f"Corpus is missing required section: {section}")
+                
+        # Validate questions
+        if not isinstance(corpus['questions'], list):
+            raise ValueError("Corpus 'questions' must be a list")
+            
+        # Validate evaluation criteria
+        required_criteria = ['relevance', 'clarity', 'completeness']
+        for criterion in required_criteria:
+            if criterion not in corpus['evaluation_criteria']:
+                print(f"Warning: Missing evaluation criterion: {criterion}")
+                corpus['evaluation_criteria'][criterion] = {'weight': 0.3}  # Default weight
+        
+        print(f"Successfully loaded corpus with {len(corpus['questions'])} questions")
+        return corpus
+        
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in corpus file: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Error loading corpus: {str(e)}")
 
 def contains_inappropriate_content(text: str, inappropriate_words: List[str]) -> bool:
     """
@@ -160,6 +201,8 @@ def evaluate_response(response: str, question: str, role_context: Optional[Dict]
     print(f"Question: {question}")
     print(f"Response length: {len(response)} characters")
     print(f"Role context: {role_context}")
+    print(f"Model type: {type(model).__name__}")
+    print(f"NLP type: {type(nlp).__name__}")
     
     try:
         corpus = load_corpus()
@@ -195,71 +238,134 @@ def evaluate_response(response: str, question: str, role_context: Optional[Dict]
         }
     
     # Find matching question in corpus
+    print("\n=== DEBUG: Searching for matching question ===")
+    print(f"Number of questions in corpus: {len(corpus.get('questions', []))}")
+    
     matching_question = None
-    for q in corpus['questions']:
-        if util.pytorch_cos_sim(
-            model.encode(question, convert_to_tensor=True),
-            model.encode(q['text'], convert_to_tensor=True)
-        ).item() > 0.8:
-            matching_question = q
-            break
+    for i, q in enumerate(corpus.get('questions', [])):
+        try:
+            question_embedding = model.encode(question, convert_to_tensor=True)
+            corpus_question_embedding = model.encode(q['text'], convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(question_embedding, corpus_question_embedding).item()
+            print(f"Question {i+1} similarity: {similarity:.4f} - {q['text']}")
+            if similarity > 0.7:  # Slightly lower threshold for better matching
+                matching_question = q
+                print(f"Found matching question: {matching_question['text']}")
+                break
+        except Exception as e:
+            print(f"Error comparing questions: {str(e)}")
+            continue
     
     if not matching_question:
+        error_msg = 'Question not found in evaluation corpus. Please try rephrasing your question or contact support.'
+        print(f"\n=== ERROR: {error_msg} ===")
+        print(f"Original question: {question}")
+        print("Available questions in corpus:")
+        for i, q in enumerate(corpus.get('questions', [])):
+            print(f"{i+1}. {q['text']}")
+        
         return {
             'score': 0,
-            'feedback': 'Question not found in evaluation corpus',
+            'feedback': error_msg,
             'metrics': {
                 'relevance': 0,
                 'clarity': 0,
                 'completeness': 0
+            },
+            'debug': {
+                'error': 'question_not_found',
+                'available_questions': [q['text'] for q in corpus.get('questions', [])]
             }
         }
     
     # Calculate keyword coverage with more granular scoring
-    keywords = matching_question['expected_keywords']
+    keywords = matching_question.get('expected_keywords', [])
+    print(f"\n=== DEBUG: Processing {len(keywords)} expected keywords ===")
+    
     response_embedding = model.encode(response.lower(), convert_to_tensor=True)
     keyword_scores = []
     keyword_feedback = []
     
-    for keyword in keywords:
-        keyword_embedding = model.encode(keyword, convert_to_tensor=True)
-        similarity = util.pytorch_cos_sim(response_embedding, keyword_embedding).item()
-        # Scale similarity to be more sensitive
-        scaled_similarity = (similarity + 1) / 2  # Convert from [-1,1] to [0,1]
-        keyword_scores.append(scaled_similarity)
-        keyword_feedback.append((keyword, scaled_similarity))
+    for i, keyword in enumerate(keywords):
+        try:
+            keyword_embedding = model.encode(keyword, convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(response_embedding, keyword_embedding).item()
+            # Scale similarity to be more sensitive
+            scaled_similarity = (similarity + 1) / 2  # Convert from [-1,1] to [0,1]
+            keyword_scores.append(scaled_similarity)
+            keyword_feedback.append((keyword, scaled_similarity))
+            print(f"Keyword {i+1}: '{keyword}' - Similarity: {similarity:.4f}, Scaled: {scaled_similarity:.4f}")
+        except Exception as e:
+            print(f"Error processing keyword '{keyword}': {str(e)}")
+            keyword_scores.append(0.0)
+            keyword_feedback.append((keyword, 0.0))
     
     # Calculate metrics with more granular scoring
     # Completeness: Weighted average of keyword coverage
-    completeness = int(sum(keyword_scores) / len(keywords) * 100)
+    keyword_count = len(keywords) if keywords else 1  # Avoid division by zero
+    completeness = int(sum(keyword_scores) / keyword_count * 100) if keyword_scores else 0
+    
+    print(f"\n=== DEBUG: Calculating metrics ===")
+    print(f"Keyword scores: {keyword_scores}")
+    print(f"Completeness score: {completeness}")
     
     # Relevance: Compare response to question directly
-    question_embedding = model.encode(question, convert_to_tensor=True)
-    relevance_score = util.pytorch_cos_sim(response_embedding, question_embedding).item()
-    relevance = int((relevance_score + 1) / 2 * 100)  # Convert from [-1,1] to [0,100]
+    try:
+        question_embedding = model.encode(question, convert_to_tensor=True)
+        relevance_score = util.pytorch_cos_sim(response_embedding, question_embedding).item()
+        relevance = int((relevance_score + 1) / 2 * 100)  # Convert from [-1,1] to [0,100]
+        print(f"Relevance score: {relevance} (raw: {relevance_score:.4f})")
+    except Exception as e:
+        print(f"Error calculating relevance: {str(e)}")
+        relevance = 0
     
     # Clarity: More sophisticated sentence analysis
-    sentences = [s.strip() for s in response.split('.') if s.strip()]
+    sentences = [s.strip() for s in re.split(r'[.!?]', response) if s.strip()]
+    print(f"\n=== DEBUG: Analyzing {len(sentences)} sentences for clarity ===")
+    
     if not sentences:
         clarity = 0
+        print("No sentences found for clarity analysis")
     else:
         # Calculate average sentence length
-        avg_length = sum(len(s.split()) for s in sentences) / len(sentences)
+        word_counts = [len(s.split()) for s in sentences]
+        avg_length = sum(word_counts) / len(sentences)
+        print(f"Average sentence length: {avg_length:.2f} words")
+        
         # Ideal sentence length is between 10-20 words
         if avg_length < 10:
             clarity = int((avg_length / 10) * 100)
+            print(f"Sentence length too short - Clarity score: {clarity}")
         elif avg_length > 20:
             clarity = int((20 / avg_length) * 100)
+            print(f"Sentence length too long - Clarity score: {clarity}")
         else:
             clarity = 100
+            print(f"Ideal sentence length - Clarity score: {clarity}")
     
     # Calculate overall score with adjusted weights
-    criteria = corpus['evaluation_criteria']
-    overall_score = int(
-        relevance * criteria['relevance']['weight'] +
-        clarity * criteria['clarity']['weight'] +
-        completeness * criteria['completeness']['weight']
-    )
+    criteria = corpus.get('evaluation_criteria', {
+        'relevance': {'weight': 0.4},
+        'clarity': {'weight': 0.3},
+        'completeness': {'weight': 0.3}
+    })
+    
+    print("\n=== DEBUG: Calculating final scores ===")
+    print(f"Weights - Relevance: {criteria.get('relevance', {}).get('weight', 0.4):.2f}, "
+          f"Clarity: {criteria.get('clarity', {}).get('weight', 0.3):.2f}, "
+          f"Completeness: {criteria.get('completeness', {}).get('weight', 0.3):.2f}")
+    
+    try:
+        overall_score = int(
+            (relevance * criteria.get('relevance', {}).get('weight', 0.4)) +
+            (clarity * criteria.get('clarity', {}).get('weight', 0.3)) +
+            (completeness * criteria.get('completeness', {}).get('weight', 0.3))
+        )
+        print(f"Final scores - Relevance: {relevance}, Clarity: {clarity}, Completeness: {completeness}")
+        print(f"Overall score: {overall_score}")
+    except Exception as e:
+        print(f"Error calculating overall score: {str(e)}")
+        overall_score = 0
     
     return {
         'score': overall_score,

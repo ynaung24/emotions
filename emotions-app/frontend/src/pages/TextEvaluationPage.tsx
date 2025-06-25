@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
   Box, 
   Button, 
@@ -25,17 +27,41 @@ const TextEvaluationPage = () => {
   const [selectedQuestion, setSelectedQuestion] = useState('');
   const [response, setResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
-  // Fetch questions from the API
-  const { data: questionsData, isLoading: isLoadingQuestions } = useQuery('questions', fetchQuestions);
+  // Fetch questions from the API with error handling
+  const { 
+    data: questionsData, 
+    isLoading: isLoadingQuestions, 
+    error: questionsError,
+    refetch: refetchQuestions
+  } = useQuery('questions', fetchQuestions, {
+    retry: 2,
+    refetchOnWindowFocus: false
+  });
+  
   const questions = questionsData?.questions || [];
+  
+  // Show error toast if questions fail to load
+  useEffect(() => {
+    if (questionsError) {
+      toast({
+        title: 'Error loading questions',
+        description: 'Failed to load interview questions. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [questionsError, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate inputs
     if (!selectedQuestion) {
       toast({
         title: 'Error',
@@ -43,53 +69,151 @@ const TextEvaluationPage = () => {
         status: 'error',
         duration: 3000,
         isClosable: true,
+        position: 'top',
       });
       return;
     }
 
-    if (!response.trim()) {
+    const trimmedResponse = response.trim();
+    if (!trimmedResponse) {
       toast({
         title: 'Error',
         description: 'Please enter your response',
         status: 'error',
         duration: 3000,
         isClosable: true,
+        position: 'top',
       });
       return;
     }
 
+    // Check if response is too short
+    if (trimmedResponse.length < 10) {
+      toast({
+        title: 'Response too short',
+        description: 'Please provide a more detailed response for better evaluation.',
+        status: 'warning',
+        duration: 4000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+
     setIsSubmitting(true);
+    let toastId: string | number | undefined;
     
     try {
-      // In a real app, you would call the API here
-      // const result = await evaluateText(response, selectedQuestion);
-      // Then navigate to results page with the evaluation
+      // Show loading toast
+      toastId = toast({
+        title: 'Evaluating your response',
+        description: 'This may take a moment...',
+        status: 'info',
+        duration: null, // Don't auto-dismiss
+        isClosable: false,
+        position: 'top',
+      });
       
-      // For now, we'll simulate a successful submission
-      setTimeout(() => {
-        setIsSubmitting(false);
-        // Navigate to results page with mock data
-        window.location.href = '/results';
-      }, 1500);
+      // Call the evaluation API
+      const evaluation = await evaluateText(trimmedResponse, selectedQuestion);
+      
+      // Close loading toast
+      if (toastId) {
+        toast.close(toastId);
+      }
+      
+      // Show success toast
+      toast({
+        title: 'Evaluation complete!',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+        position: 'top',
+      });
+      
+      // Navigate to results page with the evaluation data
+      navigate('/results', { 
+        state: { 
+          evaluation,
+          text: trimmedResponse,
+          question: selectedQuestion,
+          timestamp: new Date().toISOString()
+        } 
+      });
       
     } catch (error) {
-      console.error('Error submitting response:', error);
+      console.error('Error evaluating response:', error);
+      
+      // Close loading toast if it's still open
+      if (toastId) {
+        toast.close(toastId);
+      }
+      
+      let errorMessage = 'Failed to evaluate response. Please try again.';
+      let errorDetails = '';
+      
+      if (axios.isAxiosError(error)) {
+        // Safely access error response data
+        const responseData = error.response?.data as { detail?: string } | undefined;
+        errorDetails = responseData?.detail || '';
+        
+        // Handle different HTTP status codes
+        if (error.response?.status === 400) {
+          errorMessage = 'Invalid request. Please check your input.';
+        } else if (error.response?.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to evaluate response. Please try again.',
+        title: 'Evaluation Error',
+        description: (
+          <Box>
+            <Text>{errorMessage}</Text>
+            {errorDetails && <Text fontSize="sm" mt={2} fontStyle="italic">{errorDetails}</Text>}
+          </Box>
+        ),
         status: 'error',
-        duration: 5000,
+        duration: 5000, // Reduced from 8000 to 5000
         isClosable: true,
+        position: 'top',
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   if (isLoadingQuestions) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minH="50vh">
-        <Spinner size="xl" />
-      </Box>
+      <Container maxW="container.lg" py={8}>
+        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minH="50vh">
+          <Spinner size="xl" mb={4} />
+          <Text>Loading questions...</Text>
+        </Box>
+      </Container>
+    );
+  }
+  
+  if (questionsError) {
+    return (
+      <Container maxW="container.lg" py={8}>
+        <Box textAlign="center" py={10} px={6}>
+          <Heading as="h2" size="xl" mt={6} mb={2}>
+            Failed to load questions
+          </Heading>
+          <Text color={'gray.500'} mb={6}>
+            We couldn't load the interview questions. Please try again.
+          </Text>
+          <Button
+            colorScheme="brand"
+            onClick={() => refetchQuestions()}
+            leftIcon={<FaArrowLeft />}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
     );
   }
 

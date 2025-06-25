@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import axios from 'axios';
 import { 
   Box, 
   Button, 
@@ -21,9 +23,69 @@ import {
   Flex
 } from '@chakra-ui/react';
 import { FaArrowLeft, FaMicrophone, FaStop, FaRedo } from 'react-icons/fa';
-import { Link as RouterLink } from 'react-router-dom';
-import { fetchQuestions } from '../api/client';
+import { fetchQuestions, evaluateAudio } from '../api/client';
+import { EvaluationResponse } from '../types/evaluation';
 
+// Helper function to convert AudioBuffer to WAV format
+const audioBufferToWav = (buffer: AudioBuffer): Blob => {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // Float32, but we'll convert to 16-bit
+  const bitDepth = 16;
+
+  // Get the maximum number of samples across all channels
+  const maxSamples = buffer.length;
+  
+  // Create a buffer for the WAV file
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = maxSamples * blockAlign;
+  
+  // Create buffer for the WAV file
+  const bufferSize = 44 + dataSize;
+  const arrayBuffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(arrayBuffer);
+
+  // Helper to write string to DataView
+  const writeString = (view: DataView, offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+
+  // Helper to write 16-bit PCM samples
+  const floatTo16BitPCM = (output: DataView, offset: number, input: Float32Array) => {
+    for (let i = 0; i < input.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, input[i]));
+      output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+  };
+
+  // Write WAV header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true); // File length
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); // Byte rate
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // Write the audio data
+  const offset = 44;
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    floatTo16BitPCM(view, offset + (channel * bytesPerSample), channelData);
+  }
+
+  // Create a Blob from the ArrayBuffer
+  return new Blob([view], { type: 'audio/wav' });
+};
 const VoiceEvaluationPage = () => {
   const [selectedQuestion, setSelectedQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -37,6 +99,7 @@ const VoiceEvaluationPage = () => {
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const navigate = useNavigate();
 
   // Fetch questions from the API
   const { data: questionsData, isLoading: isLoadingQuestions } = useQuery('questions', fetchQuestions);
@@ -128,28 +191,87 @@ const VoiceEvaluationPage = () => {
     if (!audioBlob || !selectedQuestion) return;
     
     setIsProcessing(true);
+    let toastId: string | number | undefined;
     
     try {
-      // In a real app, you would call the API here
-      // const result = await evaluateAudio(audioBlob, selectedQuestion);
-      // Then navigate to results page with the evaluation
+      // Show loading toast
+      toastId = toast({
+        title: 'Processing your recording',
+        description: 'This may take a moment...',
+        status: 'info',
+        duration: null,
+        isClosable: false,
+        position: 'top',
+      });
       
-      // For now, we'll simulate a successful submission
-      setTimeout(() => {
-        setIsProcessing(false);
-        // Navigate to results page with mock data
-        window.location.href = '/results';
-      }, 2000);
+      // Ensure we have a WAV file with the correct format
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Convert to mono 16-bit PCM WAV
+      const wavBlob = await audioBufferToWav(audioBuffer);
+      
+      // Create a proper WAV file with correct headers
+      const wavFile = new File([wavBlob], 'recording.wav', { 
+        type: 'audio/wav'
+      });
+      
+      // Call the API with the properly formatted WAV file
+      const result = await evaluateAudio(wavFile, selectedQuestion);
+      
+      // Close loading toast
+      if (toastId) {
+        toast.close(toastId);
+      }
+      
+      // Navigate to results page with the evaluation
+      navigate('/results', { 
+        state: { 
+          evaluation: result,
+          text: result.feedback, // Use the transcribed text if available
+          question: selectedQuestion,
+          timestamp: new Date().toISOString(),
+          isVoiceEvaluation: true
+        } 
+      });
       
     } catch (error) {
       console.error('Error submitting recording:', error);
+      
+      // Close loading toast if it's still open
+      if (toastId) {
+        toast.close(toastId);
+      }
+      
+      let errorMessage = 'Failed to process your recording. Please try again.';
+      
+      if (axios.isAxiosError(error)) {
+        const responseData = error.response?.data as { detail?: string } | undefined;
+        const errorDetail = responseData?.detail || '';
+        
+        if (error.response?.status === 400) {
+          errorMessage = 'Invalid audio. Please ensure your recording is clear and try again.';
+        } else if (error.response?.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        }
+        
+        if (errorDetail) {
+          errorMessage += ` (${errorDetail})`;
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to process your recording. Please try again.',
+        description: errorMessage,
         status: 'error',
         duration: 5000,
         isClosable: true,
+        position: 'top',
       });
+    } finally {
       setIsProcessing(false);
     }
   };

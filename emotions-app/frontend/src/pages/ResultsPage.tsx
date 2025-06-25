@@ -231,32 +231,34 @@ const ResultsPage = () => {
           </VStack>
         </Box>
 
-        {/* Emotion Analysis */}
-        <Box 
-          p={6} 
-          borderWidth="1px" 
-          borderRadius="lg" 
-          bg="white"
-          boxShadow="sm"
-        >
-          <Heading size="md" mb={4}>Emotion Analysis</Heading>
-          <VStack spacing={4} align="stretch">
-            {evaluation.emotions.map((emotion) => (
-              <Box key={emotion.name}>
-                <HStack justify="space-between" mb={1}>
-                  <Text>{emotion.name}</Text>
-                  <Text>{emotion.value}%</Text>
-                </HStack>
-                <Progress 
-                  value={emotion.value} 
-                  size="sm" 
-                  colorScheme={emotion.color}
-                  borderRadius="full"
-                />
-              </Box>
-            ))}
-          </VStack>
-        </Box>
+        {/* Emotion Analysis - Only show if we have emotions data */}
+        {evaluation.emotions && evaluation.emotions.length > 0 && (
+          <Box 
+            p={6} 
+            borderWidth="1px" 
+            borderRadius="lg" 
+            bg="white"
+            boxShadow="sm"
+          >
+            <Heading size="md" mb={4}>Emotion Analysis</Heading>
+            <VStack spacing={4} align="stretch">
+              {evaluation.emotions.map((emotion) => (
+                <Box key={emotion.name}>
+                  <HStack justify="space-between" mb={1}>
+                    <Text>{emotion.name}</Text>
+                    <Text>{emotion.value}%</Text>
+                  </HStack>
+                  <Progress 
+                    value={emotion.value} 
+                    size="sm" 
+                    colorScheme={emotion.color}
+                    borderRadius="full"
+                  />
+                </Box>
+              ))}
+            </VStack>
+          </Box>
+        )}
 
         {/* Feedback */}
         <Box 
