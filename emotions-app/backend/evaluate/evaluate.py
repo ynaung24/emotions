@@ -133,17 +133,40 @@ def load_corpus() -> Dict[str, Any]:
         FileNotFoundError: If the corpus file doesn't exist
         ValueError: If the corpus is missing required fields
     """
-    # Use the absolute path to the corpus file
-    corpus_path = '/Users/ynaung/personal_github/emotions/data/corpus.json'
-    print(f"Loading corpus from: {corpus_path}")
+    # Try multiple possible locations for the corpus file
+    possible_paths = [
+        # Local development path (relative to backend directory)
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'data', 'corpus.json'),
+        # Docker container path (if data is volume mounted)
+        '/app/data/corpus.json',
+        # Absolute path as fallback
+        '/Users/ynaung/personal_github/emotions/data/corpus.json'
+    ]
     
-    if not os.path.exists(corpus_path):
-        raise FileNotFoundError(f"Corpus file not found at: {corpus_path}")
+    corpus = None
+    corpus_path = None
+    
+    # Try each possible path
+    for path in possible_paths:
+        try:
+            abs_path = os.path.abspath(path)
+            if os.path.exists(abs_path):
+                corpus_path = abs_path
+                logger.info(f"Found corpus file at: {corpus_path}")
+                with open(abs_path, 'r', encoding='utf-8') as f:
+                    corpus = json.load(f)
+                break
+        except Exception as e:
+            logger.debug(f"Failed to load corpus from {path}: {str(e)}")
+            continue
+    
+    if corpus is None:
+        available_paths = '\n'.join([f"- {os.path.abspath(p)}" for p in possible_paths])
+        raise FileNotFoundError(
+            f"Could not find corpus.json in any of these locations:\n{available_paths}"
+        )
     
     try:
-        with open(corpus_path, 'r', encoding='utf-8') as f:
-            corpus = json.load(f)
-            
         # Validate corpus structure
         required_sections = ['questions', 'evaluation_criteria']
         for section in required_sections:
@@ -154,18 +177,26 @@ def load_corpus() -> Dict[str, Any]:
         if not isinstance(corpus['questions'], list):
             raise ValueError("Corpus 'questions' must be a list")
             
+        # Ensure all questions have required fields
+        for i, question in enumerate(corpus['questions']):
+            if not isinstance(question, dict) or 'text' not in question:
+                raise ValueError(f"Question at index {i} is missing required 'text' field")
+            
         # Validate evaluation criteria
         required_criteria = ['relevance', 'clarity', 'completeness']
+        if 'evaluation_criteria' not in corpus:
+            corpus['evaluation_criteria'] = {}
+            
         for criterion in required_criteria:
             if criterion not in corpus['evaluation_criteria']:
-                print(f"Warning: Missing evaluation criterion: {criterion}")
+                logger.warning(f"Missing evaluation criterion: {criterion}")
                 corpus['evaluation_criteria'][criterion] = {'weight': 0.3}  # Default weight
         
-        print(f"Successfully loaded corpus with {len(corpus['questions'])} questions")
+        logger.info(f"Successfully loaded corpus with {len(corpus['questions'])} questions")
         return corpus
         
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in corpus file: {str(e)}")
+        raise ValueError(f"Invalid JSON in corpus file at {corpus_path}: {str(e)}")
     except Exception as e:
         raise ValueError(f"Error loading corpus: {str(e)}")
 
