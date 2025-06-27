@@ -46,6 +46,7 @@ models/*.pkl
 *.wav
 *.mp3
 model_cache/
+models/
 
 # Logs
 *.log
@@ -73,6 +74,7 @@ data/
 
 # demo
 demo/
+notebooks/
 
 # Node.js
 node_modules/
