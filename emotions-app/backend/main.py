@@ -74,16 +74,26 @@ async def root():
 
 @app.get("/questions")
 async def get_questions():
-    # Return the list of questions from your corpus
-    # questions = [q["text"] for q in corpus["questions"]]
-    questions = [
-        "Tell me about yourself",
-        "What are your strengths and weaknesses?",
-        "Why do you want to work here?",
-        "Where do you see yourself in 5 years?",
-        "Tell me about a challenge you faced and how you overcame it"
-    ]
-    return {"questions": questions}
+    try:
+        # Return the list of questions from the corpus
+        if not corpus or "questions" not in corpus:
+            raise ValueError("Corpus not properly loaded or missing questions")
+            
+        questions = [q["text"] for q in corpus["questions"]]
+        logger.info(f"Successfully loaded {len(questions)} questions from corpus")
+        return {"questions": questions}
+    except Exception as e:
+        logger.error(f"Error loading questions from corpus: {str(e)}")
+        # Fallback to default questions if there's an error
+        default_questions = [
+            "Tell me about yourself",
+            "What are your strengths and weaknesses?",
+            "Why do you want to work here?",
+            "Where do you see yourself in 5 years?",
+            "Tell me about a challenge you faced and how you overcame it"
+        ]
+        logger.info("Using default questions due to error")
+        return {"questions": default_questions}
 
 @app.post("/evaluate/text", response_model=EvaluationResponse)
 async def evaluate_text(request: TextRequest):
