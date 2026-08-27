@@ -91,3 +91,6 @@ logs/
 .vercel
 .netlify
 .docker/
+
+#Claude
+CLAUDE.md
