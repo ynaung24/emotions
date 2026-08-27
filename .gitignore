@@ -1,133 +1,93 @@
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+*.egg
 *.egg-info/
 .installed.cfg
-*.egg
+.Python
 
-# Virtual Environment
+# Virtual environments
 venv/
+.venv/
 env/
 ENV/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Python build artifacts (anchored so they don't eat src/lib, src/build, etc.)
+/build/
+/dist/
+/sdist/
+/wheels/
+/downloads/
+/eggs/
+/.eggs/
+/develop-eggs/
+/parts/
+/var/
+/lib/
+/lib64/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# Data and Models
-data/
-data/raw/
-data/processed/
-models/*.pt
-models/*.pth
-models/*.h5
-models/*.pkl
-*.wav
-*.mp3
-model_cache/
-models/
-
-# Logs
-*.log
-logs/
-
-# Environment variables
-.env
-.env.local
-
-# Docker
-.docker/
-
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-tests/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# data
-data/
-
-# demo
-demo/
-notebooks/
-
-# Node.js
+# --- Node / frontend ---
 node_modules/
-.cache/
 .npm
-eslintcache
-.next/
-.nuxt/
-.yarn/
+.cache/
+.pnp
 .pnp.*
-*.log
-
-# Frontend build files
-/build
-/dist
-/.next
-/out
-/.svelte-kit
-
-# Editor directories and files
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Debug logs
+eslintcache
+/emotions-app/web/dist/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Dependency directories
-bower_components/
-.pnp
-.pnp.js
+# --- Data & models (large / generated / machine-local) ---
+/data/
+/models/
+model_cache/
+*.wav
+*.mp3
 
-# Testing
+# The production corpus lives here and is machine-local; the app ships its own
+# canonical copy at emotions-app/backend/app/data/corpus.json.
+
+# --- Testing ---
+.coverage
 coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/emotions-app/web/test-results/
+/emotions-app/web/playwright-report/
+/emotions-app/web/.playwright/
 
-# Production
-build/
+# --- Tooling / editors / OS ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sw?
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints
+*.ipynb
 
-# Misc
+# --- Local-only project dirs ---
+demo/
+notebooks/
+graphify-out/
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Misc deploy caches ---
 .vercel
 .netlify
-.svelte-kit
-.astro
+.docker/

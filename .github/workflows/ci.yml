@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: emotions-app/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y libsndfile1
+      - run: pip install -e ".[dev,judge]"
+      - run: ruff check app tests
+      - run: mypy app
+      - name: fast tests
+        run: pytest -m "not slow" -q
+      - name: cache ML models
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/model_cache
+          key: ml-models-mpnet-whisper-goemotions-v1
+      - name: golden + integration (real models)
+        run: pytest -m slow -q
+        env:
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
+          EVAL_MODEL_CACHE_DIR: /home/runner/model_cache
+          HF_HOME: /home/runner/model_cache
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: emotions-app/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: emotions-app/web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: emotions-app/web/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install -y libsndfile1
+      - name: cache ML models
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/model_cache
+          key: ml-models-mpnet-whisper-goemotions-v1
+      - name: backend deps + start
+        working-directory: emotions-app/backend
+        env:
+          EVAL_JUDGE_PROVIDER: none
+          EVAL_ENABLE_EMOTION: "false"
+          EVAL_MODEL_CACHE_DIR: /home/runner/model_cache
+          HF_HOME: /home/runner/model_cache
+        run: |
+          pip install -e ".[judge]"
+          nohup uvicorn app.main:app --port 8000 > backend.log 2>&1 &
+      - name: web deps + playwright
+        working-directory: emotions-app/web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: wait for backend
+        run: for i in $(seq 1 90); do curl -sf localhost:8000/ready | grep -q '"ready":true' && break; sleep 3; done
+      - name: e2e
+        working-directory: emotions-app/web
+        run: npx playwright test
+      - if: failure()
+        run: cat emotions-app/backend/backend.log
