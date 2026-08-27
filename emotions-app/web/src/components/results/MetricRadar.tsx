@@ -16,9 +16,9 @@ export function MetricRadar({ metrics }: { metrics: Record<string, MetricResult>
   if (data.length < 3) return null;
 
   return (
-    <div className="h-64 w-full">
+    <div className="h-72 w-full">
       <ResponsiveContainer>
-        <RadarChart data={data} outerRadius="72%">
+        <RadarChart data={data} outerRadius="68%" margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
           <PolarGrid stroke="var(--border)" />
           <PolarAngleAxis
             dataKey="metric"
