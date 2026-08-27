@@ -1,0 +1,39 @@
+# One-command local stack:  docker compose up --build
+#
+# The model cache and corpus are mounted as volumes so models are downloaded
+# once and survive rebuilds (the ~400 MB sentence-transformer, whisper, and
+# GoEmotions weights are not baked into the image).
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: emotions-app/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      EVAL_CORS_ORIGINS: '["http://localhost:8080"]'
+      EVAL_JUDGE_PROVIDER: ${EVAL_JUDGE_PROVIDER:-none}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./data:/app/data:ro
+      - model-cache:/app/model_cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if __import__('json').load(urllib.request.urlopen('http://localhost:8000/ready'))['ready'] else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  web:
+    build:
+      context: ./emotions-app/web
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  model-cache:
