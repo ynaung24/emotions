@@ -22,6 +22,7 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 
@@ -63,7 +64,8 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
-tests/
+.mypy_cache/
+.ruff_cache/
 
 # OS
 .DS_Store
@@ -93,6 +95,8 @@ eslintcache
 /.next
 /out
 /.svelte-kit
+/emotions-app/web/dist/
+/emotions-app/web/node_modules/
 
 # Editor directories and files
 .idea/
@@ -125,6 +129,14 @@ coverage/
 
 # Production
 build/
+
+# graphify knowledge-graph output
+graphify-out/
+
+# Playwright
+/emotions-app/web/test-results/
+/emotions-app/web/playwright-report/
+/emotions-app/web/.playwright/
 
 # Misc
 .vercel
