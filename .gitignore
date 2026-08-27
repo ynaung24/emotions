@@ -93,4 +93,4 @@ logs/
 .docker/
 
 #Claude
-CLAUDE-*
+CLAUDE*
