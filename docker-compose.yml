@@ -1,8 +1,8 @@
 # One-command local stack:  docker compose up --build
 #
-# The model cache and corpus are mounted as volumes so models are downloaded
-# once and survive rebuilds (the ~400 MB sentence-transformer, whisper, and
-# GoEmotions weights are not baked into the image).
+# The model cache is a named volume so the ~400 MB sentence-transformer, whisper
+# and GoEmotions weights are downloaded once and survive rebuilds. The corpus
+# ships inside the image (emotions-app/backend/app/data/corpus.json).
 
 services:
   backend:
@@ -17,7 +17,6 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
-      - ./data:/app/data:ro
       - model-cache:/app/model_cache
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if __import__('json').load(urllib.request.urlopen('http://localhost:8000/ready'))['ready'] else 1)"]

@@ -9,16 +9,17 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# backend/app/core/config.py -> repo root is five parents up
-# (core / app / backend / emotions-app / <repo root>).
-_REPO_ROOT = Path(__file__).resolve().parents[4]
+# backend/app/core/config.py
+_PKG_ROOT = Path(__file__).resolve().parents[1]  # emotions-app/backend/app
+_BACKEND_ROOT = _PKG_ROOT.parent  # emotions-app/backend
+_REPO_ROOT = _BACKEND_ROOT.parents[1]  # <repo root>
 
 JudgeProvider = Literal["auto", "claude", "openai", "none"]
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(_REPO_ROOT / ".env", _REPO_ROOT / "emotions-app" / "backend" / ".env"),
+        env_file=(_REPO_ROOT / ".env", _BACKEND_ROOT / ".env"),
         env_prefix="EVAL_",
         extra="ignore",
     )
@@ -29,7 +30,9 @@ class Settings(BaseSettings):
     )
 
     # --- data ---
-    corpus_path: Path = _REPO_ROOT / "data" / "corpus.json"
+    # The canonical corpus ships with the app; override with EVAL_CORPUS_PATH to
+    # point at a machine-local or volume-mounted copy.
+    corpus_path: Path = _PKG_ROOT / "data" / "corpus.json"
     model_cache_dir: Path = _REPO_ROOT / "model_cache"
 
     # --- model ids ---

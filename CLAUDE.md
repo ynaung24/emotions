@@ -11,9 +11,10 @@ under `emotions-app/`:
 - `emotions-app/backend/` — FastAPI service, the scoring engine (Python 3.12)
 - `emotions-app/web/` — Vite + React + TypeScript + Tailwind SPA
 
-`data/corpus.json` (20 questions with keywords + `evaluation_criteria` weights +
-`inappropriate_words`) is the one hand-authored asset. It is gitignored by a blanket
-`data/` rule and exists only locally — back it up.
+`emotions-app/backend/app/data/corpus.json` (20 questions with keywords +
+`evaluation_criteria` weights + `inappropriate_words`) ships with the app and is the
+scoring rubric. A machine-local copy at the repo-root `data/` is gitignored; override
+with `EVAL_CORPUS_PATH` to use it.
 
 `demo/` (screencasts) is legacy. The old CRA frontend, the Streamlit app, a random-
 projection emotion RNN (`models/emotion_model.pt`), and the fabricated-metrics notebooks

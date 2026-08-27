@@ -17,7 +17,6 @@ from app.core.config import Settings, get_settings
 from app.services.corpus import load_corpus
 
 _DIM = 64
-REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _hash_vec(text: str) -> np.ndarray:

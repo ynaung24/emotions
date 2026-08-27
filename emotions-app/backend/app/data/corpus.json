@@ -1,0 +1,434 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Tell me about yourself.",
+      "category": "general",
+      "expected_keywords": [
+        "background",
+        "experience",
+        "education",
+        "career",
+        "goals",
+        "interests",
+        "skills",
+        "values",
+        "work history",
+        "academic background",
+        "professional journey",
+        "who I am",
+        "what I do",
+        "my story"
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "What are your greatest strengths?",
+      "category": "strengths",
+      "expected_keywords": [
+        "problem-solving",
+        "leadership",
+        "communication",
+        "creativity",
+        "adaptability",
+        "collaboration",
+        "resilience",
+        "attention to detail",
+        "initiative",
+        "time management",
+        "work ethic",
+        "quick learner",
+        "emotional intelligence",
+        "detail-oriented"
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "Why are you interested in this position?",
+      "category": "motivation",
+      "expected_keywords": [
+        "mission",
+        "values",
+        "culture",
+        "skills match",
+        "career growth",
+        "impact",
+        "challenges",
+        "innovation",
+        "aligned with goals",
+        "team environment",
+        "learning opportunities",
+        "role fit",
+        "industry interest"
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "Describe a challenge you faced and how you handled it.",
+      "category": "behavioral",
+      "expected_keywords": [
+        "problem",
+        "solution",
+        "result",
+        "team",
+        "obstacle",
+        "decision-making",
+        "communication",
+        "learning",
+        "conflict",
+        "setback",
+        "responsibility",
+        "overcame",
+        "unexpected situation",
+        "resolved"
+      ]
+    },
+    {
+      "id": "q5",
+      "text": "Where do you see yourself in five years?",
+      "category": "goals",
+      "expected_keywords": [
+        "career goals",
+        "growth",
+        "learning",
+        "skills",
+        "leadership",
+        "ambition",
+        "future plans",
+        "impact",
+        "promotion",
+        "personal development",
+        "team lead",
+        "expertise",
+        "specialization",
+        "responsibility"
+      ]
+    },
+    {
+      "id": "ds_q1",
+      "text": "Tell me about your background in data science.",
+      "category": "background",
+      "expected_keywords": [
+        "statistics",
+        "computer science",
+        "machine learning",
+        "Python",
+        "projects",
+        "modeling",
+        "data analysis",
+        "deployment",
+        "TensorFlow",
+        "scikit-learn"
+      ]
+    },
+    {
+      "id": "ds_q2",
+      "text": "What machine learning algorithms are you most comfortable with, and why?",
+      "category": "technical",
+      "expected_keywords": [
+        "random forest",
+        "xgboost",
+        "logistic regression",
+        "neural networks",
+        "support vector machine",
+        "interpretability",
+        "performance",
+        "structured data",
+        "PyTorch"
+      ]
+    },
+    {
+      "id": "ds_q3",
+      "text": "Describe a data science project you led from start to finish.",
+      "category": "project",
+      "expected_keywords": [
+        "stakeholders",
+        "data cleaning",
+        "feature engineering",
+        "modeling",
+        "classification",
+        "regression",
+        "deployment",
+        "Flask",
+        "API",
+        "AWS"
+      ]
+    },
+    {
+      "id": "ds_q4",
+      "text": "How do you evaluate model performance?",
+      "category": "evaluation",
+      "expected_keywords": [
+        "accuracy",
+        "precision",
+        "recall",
+        "f1 score",
+        "roc auc",
+        "rmse",
+        "r squared",
+        "cross-validation",
+        "overfitting",
+        "feature importance"
+      ]
+    },
+    {
+      "id": "ds_q5",
+      "text": "Write a SQL query to find the second highest salary from a table of employees.",
+      "category": "sql",
+      "expected_keywords": [
+        "sql",
+        "subquery",
+        "dense_rank",
+        "order by",
+        "rank",
+        "employees",
+        "salary"
+      ]
+    },
+    {
+      "id": "ds_q6",
+      "text": "How do you design and analyze an A/B test?",
+      "category": "experimentation",
+      "expected_keywords": [
+        "hypothesis",
+        "metrics",
+        "randomization",
+        "sample size",
+        "significance",
+        "t-test",
+        "z-test",
+        "conversion rate",
+        "experiment",
+        "control"
+      ]
+    },
+    {
+      "id": "ds_q7",
+      "text": "What experience do you have with data pipelines?",
+      "category": "data engineering",
+      "expected_keywords": [
+        "etl",
+        "airflow",
+        "spark",
+        "kafka",
+        "batch",
+        "streaming",
+        "data ingestion",
+        "snowflake",
+        "pipeline",
+        "monitoring"
+      ]
+    },
+    {
+      "id": "ds_q8",
+      "text": "How do you deploy a machine learning model to production?",
+      "category": "deployment",
+      "expected_keywords": [
+        "flask",
+        "fastapi",
+        "docker",
+        "cloud",
+        "gcp",
+        "aws",
+        "mlflow",
+        "dvc",
+        "model versioning",
+        "logging",
+        "monitoring"
+      ]
+    },
+    {
+      "id": "ds_q9",
+      "text": "How do you explain a complex model to a non-technical stakeholder?",
+      "category": "communication",
+      "expected_keywords": [
+        "visualization",
+        "shap",
+        "feature importance",
+        "simplify",
+        "business impact",
+        "interpretability",
+        "charts",
+        "non-technical",
+        "stakeholder"
+      ]
+    },
+    {
+      "id": "ds_q10",
+      "text": "How do you ensure data quality in your workflows?",
+      "category": "data engineering",
+      "expected_keywords": [
+        "data validation",
+        "missing values",
+        "data profiling",
+        "data contracts",
+        "Great Expectations",
+        "data drift",
+        "testing",
+        "pipeline monitoring",
+        "schema checks",
+        "alerting"
+      ]
+    },
+    {
+      "id": "ds_q11",
+      "text": "Tell me about a time when a model performed poorly in production. What did you do?",
+      "category": "behavioral",
+      "expected_keywords": [
+        "monitoring",
+        "root cause analysis",
+        "data drift",
+        "model decay",
+        "logging",
+        "rollback",
+        "stakeholder communication",
+        "metrics",
+        "debugging",
+        "feedback loop"
+      ]
+    },
+    {
+      "id": "ds_q12",
+      "text": "How would you approach building a recommendation system?",
+      "category": "technical",
+      "expected_keywords": [
+        "collaborative filtering",
+        "content-based",
+        "hybrid",
+        "user-item matrix",
+        "cold start",
+        "similarity",
+        "ranking",
+        "matrix factorization",
+        "implicit feedback",
+        "surprise",
+        "lightfm"
+      ]
+    },
+    {
+      "id": "ds_q13",
+      "text": "What ethical concerns do you consider when building models?",
+      "category": "ethics",
+      "expected_keywords": [
+        "bias",
+        "fairness",
+        "explainability",
+        "transparency",
+        "consent",
+        "privacy",
+        "GDPR",
+        "responsible AI",
+        "data misuse",
+        "discrimination"
+      ]
+    },
+    {
+      "id": "ds_q14",
+      "text": "How do you communicate trade-offs in model choices to product managers?",
+      "category": "communication",
+      "expected_keywords": [
+        "accuracy",
+        "interpretability",
+        "latency",
+        "resource usage",
+        "business goal",
+        "cost",
+        "stakeholders",
+        "visualizations",
+        "comparison",
+        "examples"
+      ]
+    },
+    {
+      "id": "ds_q15",
+      "text": "Explain the difference between batch and real-time inference.",
+      "category": "deployment",
+      "expected_keywords": [
+        "latency",
+        "throughput",
+        "streaming",
+        "real-time",
+        "batch processing",
+        "REST API",
+        "message queues",
+        "online prediction",
+        "data freshness",
+        "cost tradeoff"
+      ]
+    }
+  ],
+  "evaluation_criteria": {
+    "relevance": {
+      "description": "How directly the answer addresses the question asked",
+      "weight": 0.26
+    },
+    "completeness": {
+      "description": "How many of the points a strong answer would cover are present",
+      "weight": 0.37
+    },
+    "specificity": {
+      "description": "Concrete detail - named tools, numbers, and examples rather than generalities",
+      "weight": 0.13
+    },
+    "structure": {
+      "description": "Situation / Task / Action / Result arc, for behavioural questions",
+      "weight": 0.16
+    },
+    "clarity": {
+      "description": "Readability and sentence structure",
+      "weight": 0.04
+    },
+    "confidence": {
+      "description": "Assertive phrasing, low on hedging and filler",
+      "weight": 0.02
+    },
+    "conciseness": {
+      "description": "Substance without padding or repetition",
+      "weight": 0.02
+    }
+  },
+  "inappropriate_words": [
+    "fuck",
+    "shit",
+    "damn",
+    "hell",
+    "bitch",
+    "asshole",
+    "dick",
+    "pussy",
+    "cunt",
+    "ass",
+    "bastard",
+    "motherfucker",
+    "fucker",
+    "shitty",
+    "fucking",
+    "damned",
+    "bloody",
+    "bugger",
+    "crap",
+    "darn",
+    "drat",
+    "goddamn",
+    "goddamned",
+    "arse",
+    "arsehole",
+    "bollocks",
+    "bullshit",
+    "cock",
+    "dickhead",
+    "prick",
+    "wanker",
+    "twat",
+    "wank",
+    "fanny",
+    "knob",
+    "bellend",
+    "faggot",
+    "chink",
+    "nigger",
+    "retard",
+    "nigga",
+    "nig"
+  ]
+}
