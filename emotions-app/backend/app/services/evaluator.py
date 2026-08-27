@@ -119,6 +119,7 @@ class Evaluator:
         sentence_vecs = packed[: len(sentences)]
         answer_vec = packed[len(sentences) : len(sentences) + 1]
         question_vec = packed[len(sentences) + 1 : len(sentences) + 2]
+        target_vec = reg.relevance_target(matched_q) if matched_q is not None else question_vec
 
         if matched_q is not None:
             keywords, keyword_vecs = reg.keyword_vectors(matched_q)
@@ -133,9 +134,7 @@ class Evaluator:
             )
 
         scores: dict[str, MetricOutput] = {
-            "relevance": score_relevance(
-                question, answer, question_vec, answer_vec, sentence_vecs
-            ),
+            "relevance": score_relevance(target_vec, answer_vec, sentence_vecs),
             "completeness": score_completeness(
                 keywords,
                 keyword_vecs,

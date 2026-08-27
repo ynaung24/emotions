@@ -38,5 +38,5 @@ def piecewise(x: float, anchors: list[tuple[float, float]]) -> float:
 
 # Anchors were chosen so that off-topic answers land <40 and strong answers >75.
 # The golden discrimination test (tests/golden/) is the real guard on these.
-RELEVANCE_COSINE = [(0.08, 0.0), (0.22, 28.0), (0.40, 60.0), (0.55, 85.0), (0.70, 100.0)]
-KEYWORD_SIM = [(0.15, 0.0), (0.30, 40.0), (0.45, 70.0), (0.60, 95.0), (0.72, 100.0)]
+RELEVANCE_COSINE = [(0.08, 0.0), (0.22, 30.0), (0.38, 62.0), (0.52, 86.0), (0.66, 100.0)]
+KEYWORD_SIM = [(0.18, 0.0), (0.30, 34.0), (0.44, 68.0), (0.57, 92.0), (0.70, 100.0)]

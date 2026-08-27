@@ -97,6 +97,7 @@ eslintcache
 /.svelte-kit
 /emotions-app/web/dist/
 /emotions-app/web/node_modules/
+*.tsbuildinfo
 
 # Editor directories and files
 .idea/

@@ -48,8 +48,10 @@ def score_completeness(
 
     coverage_ratio = len(covered) / len(keywords)
     mean_score = float(np.mean(per_keyword)) * 100.0
+    # keyword lists are aspirational - a strong 45-second answer realistically
+    # covers 40-55% of them, so the curve tops out well before 100%.
     coverage_score = piecewise(
-        coverage_ratio, [(0.0, 0.0), (0.25, 48.0), (0.5, 76.0), (0.7, 92.0), (0.9, 100.0)]
+        coverage_ratio, [(0.0, 0.0), (0.2, 45.0), (0.4, 78.0), (0.55, 95.0), (0.75, 100.0)]
     )
 
     value = 0.5 * mean_score + 0.5 * coverage_score

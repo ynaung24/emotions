@@ -29,6 +29,15 @@ STAR_PROTOTYPES: dict[str, str] = {
 }
 
 
+def _enriched_text(q: Question) -> str:
+    # The expected talking points alone - deliberately NOT the question wording,
+    # so an answer that merely parrots the question ("evaluating performance is
+    # important") doesn't score as relevant; it has to be about the substance.
+    if q.expected_keywords:
+        return f"{q.category}: {', '.join(q.expected_keywords)}"
+    return q.text
+
+
 class ModelRegistry:
     def __init__(self, settings: Settings, corpus: Corpus) -> None:
         self.settings = settings
@@ -45,6 +54,7 @@ class ModelRegistry:
 
         self._question_vecs: np.ndarray | None = None
         self._keyword_vecs: dict[str, np.ndarray] = {}
+        self._enriched_vecs: dict[str, np.ndarray] = {}
         self._star_vecs: np.ndarray | None = None
 
     # ------------------------------------------------------------------ builders
@@ -126,8 +136,23 @@ class ModelRegistry:
         for q in self.corpus.questions:
             if q.id not in self._keyword_vecs and q.expected_keywords:
                 self._keyword_vecs[q.id] = self._embed(list(q.expected_keywords))
+            if q.id not in self._enriched_vecs:
+                self._enriched_vecs[q.id] = self._embed([_enriched_text(q)])[0]
         if self._star_vecs is None:
             self._star_vecs = self._embed(list(STAR_PROTOTYPES.values()))
+
+    def relevance_target(self, question: Question) -> np.ndarray:
+        """Embedding of the question plus its expected talking points.
+
+        Open-ended prompts ('tell me about yourself') carry little signal on their
+        own; anchoring relevance to the substance the question is after keeps a
+        specific, on-point answer from being marked irrelevant.
+        """
+        vec = self._enriched_vecs.get(question.id)
+        if vec is None:
+            vec = self._embed([_enriched_text(question)])[0]
+            self._enriched_vecs[question.id] = vec
+        return vec.reshape(1, -1)
 
     @property
     def star_vectors(self) -> np.ndarray:

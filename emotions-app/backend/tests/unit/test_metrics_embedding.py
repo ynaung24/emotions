@@ -20,8 +20,8 @@ def test_relevance_higher_for_on_topic():
     off_topic = "My favourite hobby is baking sourdough bread on weekends"
 
     qv = _vecs([question])
-    on = score_relevance(question, on_topic, qv, _vecs([on_topic]), _vecs([on_topic]))
-    off = score_relevance(question, off_topic, qv, _vecs([off_topic]), _vecs([off_topic]))
+    on = score_relevance(qv, _vecs([on_topic]), _vecs([on_topic]))
+    off = score_relevance(qv, _vecs([off_topic]), _vecs([off_topic]))
     assert on.value > off.value
 
 

@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens - the brand hue (#0080ff) carried over from the old Chakra theme.
+   Every color is defined for both themes so nothing borrows the host background. */
+@theme {
+  --color-brand-50: #e6f2ff;
+  --color-brand-100: #cce4ff;
+  --color-brand-200: #99c9ff;
+  --color-brand-300: #66adff;
+  --color-brand-400: #3392ff;
+  --color-brand-500: #0080ff;
+  --color-brand-600: #0066cc;
+  --color-brand-700: #004d99;
+  --color-brand-800: #003366;
+  --color-brand-900: #001a33;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+}
+
+.dark {
+  --bg: #0b1120;
+  --surface: #121a2b;
+  --surface-2: #1c2740;
+  --border: #29344d;
+  --text: #e8edf7;
+  --text-muted: #94a3b8;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+  }
+  * {
+    border-color: var(--border);
+  }
+}
+
+@utility surface {
+  background-color: var(--surface);
+}
+@utility surface-2 {
+  background-color: var(--surface-2);
+}
+@utility text-muted {
+  color: var(--text-muted);
+}
